@@ -4,26 +4,19 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-var (
-	_configs map[string]Config
-	_clients map[string]*elastic.Client
-)
+var _clients map[string]*elastic.Client
 
 func Init(configs ...Config) error {
-	_configs = make(map[string]Config, 8)
-	for _, config := range configs {
-		conf := config.Default()
-		_configs[conf.Id] = conf
-	}
+	_clients = make(map[string]*elastic.Client, 4)
 
-	_clients = make(map[string]*elastic.Client, 8)
-	for _, config := range _configs {
-		client, err := NewClient(config)
+	for _, config := range configs {
+		cfg := config.Default()
+		cli, err := NewClient(cfg)
 		if err != nil {
 			Finally()
 			return err
 		}
-		_clients[config.Id] = client
+		_clients[cfg.Id] = cli
 	}
 
 	return nil

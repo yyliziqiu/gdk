@@ -12,38 +12,34 @@ import (
 )
 
 var (
-	_configs map[string]Config
-
-	_rawDbs map[string]*sql.DB
-	_ormDbS map[string]*gorm.DB
+	_sql map[string]*sql.DB
+	_orm map[string]*gorm.DB
 )
 
 func Init(configs ...Config) error {
-	_configs = make(map[string]Config, 8)
-	for _, config := range configs {
-		conf := config.Default()
-		_configs[conf.Id] = conf
-	}
+	_sql = make(map[string]*sql.DB, 4)
+	_orm = make(map[string]*gorm.DB, 4)
 
-	_rawDbs = make(map[string]*sql.DB, 8)
-	_ormDbS = make(map[string]*gorm.DB, 8)
-	for _, config := range _configs {
-		raw, err := New(config)
+	for _, config := range configs {
+		cfg := config.Default()
+
+		raw, err := New(cfg)
 		if err != nil {
 			Finally()
 			return err
 		}
-		_rawDbs[config.Id] = raw
+		_sql[cfg.Id] = raw
 
-		if !config.EnableOrm {
+		if !cfg.EnableOrm {
 			continue
 		}
-		orm, err := NewOrm(config, raw)
+
+		orm, err := NewOrm(cfg, raw)
 		if err != nil {
 			Finally()
 			return err
 		}
-		_ormDbS[config.Id] = orm
+		_orm[cfg.Id] = orm
 	}
 
 	return nil
@@ -86,13 +82,13 @@ func NewOrm(config Config, db *sql.DB) (*gorm.DB, error) {
 }
 
 func Finally() {
-	for _, db := range _rawDbs {
+	for _, db := range _sql {
 		_ = db.Close()
 	}
 }
 
 func Get(id string) *sql.DB {
-	return _rawDbs[id]
+	return _sql[id]
 }
 
 func GetDefault() *sql.DB {
@@ -100,17 +96,9 @@ func GetDefault() *sql.DB {
 }
 
 func GetOrm(id string) *gorm.DB {
-	return _ormDbS[id]
+	return _orm[id]
 }
 
 func GetOrmDefault() *gorm.DB {
 	return GetOrm(DefaultId)
-}
-
-func GetConfig(id string) Config {
-	return _configs[id]
-}
-
-func GetConfigDefault() Config {
-	return GetConfig(DefaultId)
 }
