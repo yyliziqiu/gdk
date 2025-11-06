@@ -1,0 +1,6 @@
+/bin
+/logs
+/data
+
+.idea
+.DS_Store
