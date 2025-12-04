@@ -68,8 +68,8 @@ func SerializeHeader(header http.Header) string {
 	return string(bs)
 }
 
-var _quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+var _quoteReplacer = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
 
 func EscapeQuotes(s string) string {
-	return _quoteEscaper.Replace(s)
+	return _quoteReplacer.Replace(s)
 }

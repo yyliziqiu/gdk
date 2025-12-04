@@ -4,64 +4,54 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"strings"
 )
 
-func (cli *Client) logRequest(req *http.Request, res *http.Response, reqBody []byte, resBody []byte, err error, cost string) {
-	if cli.logger == nil {
+func (c *Client) logRequest(req *http.Request, res *http.Response, reqBody []byte, resBody []byte, err error, cost string) {
+	if c.logger == nil {
 		return
 	}
 
-	headers, reqSb, resSb := SerializeHeader(req.Header), "", ""
-	if len(reqBody) > 0 {
-		reqSb = string(reqBody)
+	headers := "-"
+	if c.logHeader {
+		headers = SerializeHeader(req.Header)
 	}
-	if len(resBody) > 0 {
-		resSb = string(resBody)
-	}
+	reqBy := string(reqBody)
+	resBy := string(resBody)
 
 	if err == nil {
-		cli.logInfo("Request succeed(%d), method: %s, url: %s, header: %s, request: %s, response: %s, cost: %s.",
-			res.StatusCode, req.Method, req.URL, headers, reqSb, resSb, cost)
+		c.logInfo(logFormat1, res.StatusCode, req.Method, req.URL, headers, reqBy, resBy, cost)
 	} else {
-		cli.logWarn("Request failed(%d), method: %s, url: %s, header: %s, request: %s, response: %s, error: %v, cost: %s.",
-			res.StatusCode, req.Method, req.URL, headers, reqSb, resSb, err, cost)
+		c.logWarn(logFormat2, res.StatusCode, req.Method, req.URL, headers, reqBy, resBy, err, cost)
 	}
 }
 
-func (cli *Client) logInfo(format string, args ...interface{}) {
-	if cli.logger == nil {
-		return
+func (c *Client) logInfo(format string, args ...interface{}) {
+	if c.logger != nil {
+		c.logger.Info(c.logPretty(fmt.Sprintf(format, args...)))
 	}
-	message := cli.logCheck(fmt.Sprintf(format, args...))
-	cli.logger.Info(message)
 }
 
-func (cli *Client) logWarn(format string, args ...interface{}) {
-	if cli.logger == nil {
-		return
+func (c *Client) logWarn(format string, args ...interface{}) {
+	if c.logger != nil {
+		c.logger.Warn(c.logPretty(fmt.Sprintf(format, args...)))
 	}
-	message := cli.logCheck(fmt.Sprintf(format, args...))
-	cli.logger.Warn(message)
 }
 
-func (cli *Client) logCheck(log string) string {
-	if cli.logLength <= 0 {
+func (c *Client) logPretty(msg string) string {
+	if c.logLength <= 0 {
 		return ""
 	}
-	if len(log) > cli.logLength {
-		log = log[:cli.logLength]
+	if len(msg) > c.logLength {
+		msg = msg[:c.logLength]
 	}
-	if cli.logEscape {
-		log = strings.ReplaceAll(log, "\t", "\\t")
-		log = strings.ReplaceAll(log, "\r", "\\r")
-		log = strings.ReplaceAll(log, "\n", "\\n")
+	if c.logEscape {
+		msg = c.replacer.Replace(msg)
 	}
-	return log
+	return msg
 }
 
-func (cli *Client) dumpRequest(req *http.Request) {
-	if !cli.dumps {
+func (c *Client) dumpRequest(req *http.Request) {
+	if !c.dumps {
 		return
 	}
 	bs, err := httputil.DumpRequestOut(req, true)
@@ -74,8 +64,8 @@ func (cli *Client) dumpRequest(req *http.Request) {
 	fmt.Println("\n---------- Request End----------")
 }
 
-func (cli *Client) dumpResponse(res *http.Response) {
-	if !cli.dumps {
+func (c *Client) dumpResponse(res *http.Response) {
+	if !c.dumps {
 		return
 	}
 	bs, err := httputil.DumpResponse(res, true)

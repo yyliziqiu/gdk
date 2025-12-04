@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -67,6 +68,13 @@ func Prefix(prefix string) Option {
 	}
 }
 
+// BaseUrl deprecate
+func BaseUrl(baseUrl string) Option {
+	return func(cli *Client) {
+		cli.prefix = baseUrl
+	}
+}
+
 func Error(error error) Option {
 	return func(cli *Client) {
 		cli.error = error
@@ -79,22 +87,27 @@ func Dumps(enabled bool) Option {
 	}
 }
 
-// BaseUrl deprecate
-func BaseUrl(baseUrl string) Option {
-	return func(cli *Client) {
-		cli.prefix = baseUrl
-	}
-}
-
 func LogLength(n int) Option {
 	return func(cli *Client) {
 		cli.logLength = n
 	}
 }
 
+func LogHeader(enabled bool) Option {
+	return func(cli *Client) {
+		cli.logHeader = enabled
+	}
+}
+
 func LogEscape(enabled bool) Option {
 	return func(cli *Client) {
 		cli.logEscape = enabled
+	}
+}
+
+func Replacer(replacer *strings.Replacer) Option {
+	return func(cli *Client) {
+		cli.replacer = replacer
 	}
 }
 
