@@ -59,8 +59,8 @@ func (c *Client) dumpRequest(req *http.Request) {
 		fmt.Printf("Dump request failed, error: %v\n", err)
 		return
 	}
-	fmt.Println("\n---------- Request ----------")
-	fmt.Printf(string(bs))
+	fmt.Println("\n---------- Request Begin ----------")
+	fmt.Print(string(bs))
 	fmt.Println("\n---------- Request End----------")
 }
 
@@ -73,7 +73,7 @@ func (c *Client) dumpResponse(res *http.Response) {
 		fmt.Printf("Dump response failed, error: %v", err)
 		return
 	}
-	fmt.Println("\n---------- Response ----------")
-	fmt.Printf(string(bs))
+	fmt.Println("\n---------- Response Begin----------")
+	fmt.Print(string(bs))
 	fmt.Println("\n---------- Response End----------")
 }
