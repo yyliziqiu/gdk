@@ -50,3 +50,19 @@ func TestRound(t *testing.T) {
 	fmt.Println("end, cost: ", time.Now().UnixMilli()-t1)
 	fmt.Println("A: ", a, " B: ", b, " C: ", c, " D: ", d, " E: ", e)
 }
+
+func TestRound2(t *testing.T) {
+	r := NewRound()
+	r.Add("A", 100)
+	r.Add("B", 0)
+	r.Add("C", 0)
+
+	fmt.Println(r.swrr)
+
+	for i := 0; i < 20; i++ {
+		k := r.Next()
+		fmt.Print(k.(string), " ")
+	}
+
+	fmt.Println(r.swrr)
+}

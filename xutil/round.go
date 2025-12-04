@@ -57,7 +57,7 @@ func (t *Round) add(value any, weight int) {
 	}
 
 	// 判断节点权重是否相同，若权重不完全相同则使用平滑加权，否则使用循环遍历的方式
-	if t.len > 1 && node.weight != t.list[t.len-1].weight {
+	if t.len > 0 && node.weight != t.list[t.len-1].weight {
 		t.swrr = true
 	}
 
