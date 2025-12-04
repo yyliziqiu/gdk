@@ -16,7 +16,7 @@ func TestRound(t *testing.T) {
 	r.add("D", 40)
 	r.add("E", 0)
 
-	fmt.Println("start")
+	fmt.Println("start: ", r.swrr)
 	t1 := time.Now().UnixMilli()
 
 	var a, b, c, d, e int32
@@ -64,5 +64,21 @@ func TestRound2(t *testing.T) {
 		fmt.Print(k.(string), " ")
 	}
 
+	fmt.Println()
+}
+
+func TestRound3(t *testing.T) {
+	r := NewRound()
+	r.Add("A", 100)
+
 	fmt.Println(r.swrr)
+
+	for i := 0; i < 20; i++ {
+		k := r.Next()
+		if k != nil {
+			fmt.Print(k.(string), " ")
+		}
+	}
+
+	fmt.Println()
 }
