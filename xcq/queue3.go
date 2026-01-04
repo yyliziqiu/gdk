@@ -100,16 +100,16 @@ func (t *GsQueue) Pops2(filter Filter) {
 	t.mu.Unlock()
 }
 
-func (t *GsQueue) SlideN(item any, n int) (last any, slide bool) {
+func (t *GsQueue) SlideN(item any, n int) (removed []any, slide bool) {
 	t.mu.Lock()
-	last, slide = t.qu.SlideN(item, n)
+	removed, slide = t.qu.SlideN(item, n)
 	t.mu.Unlock()
 	return
 }
 
-func (t *GsQueue) Slide(item any, remove Remove) (last any, n int) {
+func (t *GsQueue) Slide(item any, remove Remove) (removed []any, n int) {
 	t.mu.Lock()
-	last, n = t.qu.Slide(item, remove)
+	removed, n = t.qu.Slide(item, remove)
 	t.mu.Unlock()
 	return
 }
@@ -165,27 +165,26 @@ func (t *GsQueue) CopyList() []any {
 	t.mu.Lock()
 	list := t.qu.CopyList()
 	t.mu.Unlock()
-
 	return list
 }
 
 func (t *GsQueue) SaveSnap() error {
 	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return t.qu.SaveSnap()
+	err := t.qu.SaveSnap()
+	t.mu.Unlock()
+	return err
 }
 
 func (t *GsQueue) LoadSnap(item any) error {
 	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return t.qu.LoadSnap(item)
+	err := t.qu.LoadSnap(item)
+	t.mu.Unlock()
+	return err
 }
 
 func (t *GsQueue) DupSnap(d time.Duration) error {
 	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return t.qu.DupSnap(d)
+	err := t.qu.DupSnap(d)
+	t.mu.Unlock()
+	return err
 }

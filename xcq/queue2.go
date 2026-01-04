@@ -26,7 +26,7 @@ func (q *Queue) HeadItem() (any, error) {
 
 // TailItem 获取尾元素
 func (q *Queue) TailItem() (any, error) {
-	return q.get(q.tailPrev())
+	return q.get(q.tailprev())
 }
 
 // Status 获取队列状态
@@ -74,7 +74,7 @@ func (q *Queue) Pops(filter Filter) []any {
 		}
 		ret = append(ret, item)
 		q.list[q.head] = nil
-		q.head = q.headNext()
+		q.head = q.headnext()
 	}
 
 	return ret
@@ -89,41 +89,44 @@ func (q *Queue) Pops2(filter Filter) {
 			break
 		}
 		q.list[q.head] = nil
-		q.head = q.headNext()
+		q.head = q.headnext()
 	}
 }
 
 // SlideN 类似于滑动窗口，在队列尾添加一个元素，如果添加完元素队列长度大于 n，则删除前面的元素，最后只保留队列后 n 个元素
-// 第一个返回值表示最后一个删除的元素
+// 第一个返回值表示被删除的元素
 // 第二个返回值表示是窗口否发生了滑动
-func (q *Queue) SlideN(item any, n int) (any, bool) {
+func (q *Queue) SlideN(item any, n int) (removed []any, slide bool) {
 	q.push(item)
 
-	slide := false
 	for q.len() > n {
 		slide = true
-		item, _ = q.pop()
+		if rm, ok := q.pop(); ok {
+			removed = append(removed, rm)
+		}
 	}
 
 	if slide && q.debug {
 		q.print("slide")
 	}
 
-	return item, slide
+	return
 }
 
 // Remove 需要删除的元素返回 true，否则返回 false
 type Remove func(item any) bool
 
 // Slide  类似于滑动窗口，在队列尾添加一个元素，并从队列头开始直到第一个不需要删除的元素出现，该元素前面的元素全部删除
-// 第一个返回值表示最后一个被删除的元素
+// 第一个返回值表示被删除的元素
 // 第二个返回值表示被删除的元素个数
-func (q *Queue) Slide(item any, remove Remove) (last any, n int) {
+func (q *Queue) Slide(item any, remove Remove) (removed []any, n int) {
 	q.push(item)
 
 	for !q.empty() && remove(q.list[q.head]) {
 		n++
-		last, _ = q.pop()
+		if rm, ok := q.pop(); ok {
+			removed = append(removed, rm)
+		}
 	}
 
 	if n > 0 && q.debug {
@@ -137,7 +140,7 @@ func (q *Queue) Slide(item any, remove Remove) (last any, n int) {
 // reverse false：从头到尾遍历，true：从尾到头遍历
 func (q *Queue) Walk(f func(item any), reverse bool) {
 	if reverse {
-		for i := q.tailPrev(); i != q.headPrev(); i = q.prev(i) {
+		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
 			f(q.list[i])
 		}
 	} else {
@@ -151,7 +154,7 @@ func (q *Queue) Walk(f func(item any), reverse bool) {
 // reverse false：从头到尾遍历，true：从尾到头遍历
 func (q *Queue) Find(filter Filter, reverse bool) (ret any, idx int) {
 	if reverse {
-		for i := q.tailPrev(); i != q.headPrev(); i = q.prev(i) {
+		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
 			if item := q.list[i]; filter(item) {
 				ret, idx = item, i
 				break
@@ -188,7 +191,7 @@ func (q *Queue) TerminalN(n int, reverse bool) []any {
 	}
 
 	if reverse {
-		for i, j := 0, q.tailPrev(); i < n && j != q.headPrev(); i, j = i+1, q.prev(j) {
+		for i, j := 0, q.tailprev(); i < n && j != q.headprev(); i, j = i+1, q.prev(j) {
 			ret = append(ret, q.list[j])
 		}
 	} else {
@@ -205,7 +208,7 @@ func (q *Queue) Terminal(filter Filter, reverse bool) []any {
 	ret := make([]any, 0)
 
 	if reverse {
-		for i := q.tailPrev(); i != q.headPrev(); i = q.prev(i) {
+		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
 			item := q.list[i]
 			if !filter(item) {
 				break

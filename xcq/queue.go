@@ -58,37 +58,35 @@ func (q *Queue) next(i int) int {
 }
 
 // 获取头下标的前一个下标
-func (q *Queue) headPrev() int {
+func (q *Queue) headprev() int {
 	return q.prev(q.head)
 }
 
 // 获取头下标的后一个下标
-func (q *Queue) headNext() int {
+func (q *Queue) headnext() int {
 	return q.next(q.head)
 }
 
 // 获取尾下标的前一个下标
-func (q *Queue) tailPrev() int {
+func (q *Queue) tailprev() int {
 	return q.prev(q.tail)
 }
 
 // 获取尾下标的后一个下标
-func (q *Queue) tailNext() int {
+func (q *Queue) tailnext() int {
 	return q.next(q.tail)
 }
 
 // 从队列尾向队列中添加一个元素
 func (q *Queue) push(item any) {
 	// 若队列已满，则扩容
-	if q.tailNext() == q.head {
-		q.print("grow start")
+	if q.tailnext() == q.head {
 		q.grow()
-		q.print("grow done")
 	}
 
 	// 添加元素
 	q.list[q.tail] = item
-	q.tail = q.tailNext()
+	q.tail = q.tailnext()
 
 	// 打印 debug 信息
 	if q.debug {
@@ -117,6 +115,10 @@ func (q *Queue) grow() {
 	q.list = dst
 	q.head = 0
 	q.tail = j
+
+	if q.debug {
+		q.print("grow")
+	}
 }
 
 // 从队列头弹出一个元素
@@ -129,7 +131,7 @@ func (q *Queue) pop() (any, bool) {
 	// 弹出元素
 	item := q.list[q.head]
 	q.list[q.head] = nil
-	q.head = q.headNext()
+	q.head = q.headnext()
 
 	// 打印 debug 信息
 	if q.debug {
