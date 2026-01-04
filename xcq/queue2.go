@@ -93,47 +93,45 @@ func (q *Queue) Pops2(filter Filter) {
 	}
 }
 
-// SlideN 类似于滑动窗口，在队列尾添加一个元素，如果添加完元素队列长度大于 n，则删除前面的元素，最后只保留队列后 n 个元素
-// 第一个返回值表示被删除的元素
-// 第二个返回值表示是窗口否发生了滑动
-func (q *Queue) SlideN(item any, n int) (removed []any, slide bool) {
-	q.push(item)
-
-	for q.len() > n {
-		slide = true
-		if rm, ok := q.pop(); ok {
-			removed = append(removed, rm)
-		}
-	}
-
-	if slide && q.debug {
-		q.print("slide")
-	}
-
-	return
-}
-
 // Remove 需要删除的元素返回 true，否则返回 false
 type Remove func(item any) bool
 
 // Slide  类似于滑动窗口，在队列尾添加一个元素，并从队列头开始直到第一个不需要删除的元素出现，该元素前面的元素全部删除
 // 第一个返回值表示被删除的元素
 // 第二个返回值表示被删除的元素个数
-func (q *Queue) Slide(item any, remove Remove) (removed []any, n int) {
+func (q *Queue) Slide(item any, rmf Remove) (rmd []any) {
 	q.push(item)
 
-	for !q.empty() && remove(q.list[q.head]) {
-		n++
+	for !q.empty() && rmf(q.list[q.head]) {
 		if rm, ok := q.pop(); ok {
-			removed = append(removed, rm)
+			rmd = append(rmd, rm)
 		}
 	}
 
-	if n > 0 && q.debug {
+	if len(rmd) > 0 && q.debug {
 		q.print("slide")
 	}
 
-	return
+	return rmd
+}
+
+// SlideN 类似于滑动窗口，在队列尾添加一个元素，如果添加完元素队列长度大于 n，则删除前面的元素，最后只保留队列后 n 个元素
+// 第一个返回值表示被删除的元素
+// 第二个返回值表示是窗口否发生了滑动
+func (q *Queue) SlideN(item any, n int) (rmd []any) {
+	q.push(item)
+
+	for q.len() > n {
+		if rm, ok := q.pop(); ok {
+			rmd = append(rmd, rm)
+		}
+	}
+
+	if len(rmd) > 0 && q.debug {
+		q.print("slide")
+	}
+
+	return rmd
 }
 
 // Walk 遍历队列

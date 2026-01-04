@@ -145,7 +145,7 @@ func TestPops(t *testing.T) {
 func TestSlideN(t *testing.T) {
 	items := []int{8, 9, 10, 11, 12}
 	for _, i := range items {
-		rm, _ := q1.SlideN(i, 3)
+		rm := q1.SlideN(i, 3)
 		print1("removed: ", rm)
 	}
 	print1(q1.list) // [11 12 <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil> 10]
@@ -158,26 +158,26 @@ func TestSlideN(t *testing.T) {
 }
 
 func TestSlide(t *testing.T) {
-	rm, n := q1.Slide(8, func(item any) bool {
+	rm := q1.Slide(8, func(item any) bool {
 		nn := item.(int)
 		return nn <= 4
 	})
-	print1("removed: ", rm, n) // [1 2 3 4] 4
-	print1(q1.list)            // [<nil> <nil> <nil> <nil> <nil> 5 6 7 8 <nil> <nil>]
+	print1("removed: ", rm) // [1 2 3 4]
+	print1(q1.list)         // [<nil> <nil> <nil> <nil> <nil> 5 6 7 8 <nil> <nil>]
 
-	rm, n = q2.Slide(8, func(item any) bool {
+	rm = q2.Slide(8, func(item any) bool {
 		nn := item.(int)
 		return nn <= 4
 	})
-	print1("removed: ", rm, n) // [1 2 3] 3
-	print1(q2.list)            // [<nil> 8 <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil>]
+	print1("removed: ", rm) // [1 2 3]
+	print1(q2.list)         // [<nil> 8 <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil>]
 
-	rm, n = q2.Slide(8, func(item any) bool {
+	rm = q2.Slide(8, func(item any) bool {
 		nn := item.(int)
 		return nn <= 4
 	})
-	print1("removed: ", rm, n) // [] 0
-	print1(q2.list)            // [<nil> 8 8 <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil>]
+	print1("removed: ", rm) // []
+	print1(q2.list)         // [<nil> 8 8 <nil> <nil> <nil> <nil> <nil> <nil> <nil> <nil>]
 }
 
 func TestWalk(t *testing.T) {

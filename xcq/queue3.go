@@ -100,16 +100,16 @@ func (t *GsQueue) Pops2(filter Filter) {
 	t.mu.Unlock()
 }
 
-func (t *GsQueue) SlideN(item any, n int) (removed []any, slide bool) {
+func (t *GsQueue) Slide(item any, rmf Remove) (rmd []any) {
 	t.mu.Lock()
-	removed, slide = t.qu.SlideN(item, n)
+	rmd = t.qu.Slide(item, rmf)
 	t.mu.Unlock()
 	return
 }
 
-func (t *GsQueue) Slide(item any, remove Remove) (removed []any, n int) {
+func (t *GsQueue) SlideN(item any, n int) (rmd []any) {
 	t.mu.Lock()
-	removed, n = t.qu.Slide(item, remove)
+	rmd = t.qu.SlideN(item, n)
 	t.mu.Unlock()
 	return
 }
