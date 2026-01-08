@@ -123,7 +123,7 @@ func (app *App) Run() (err error) {
 
 	xlog.Info("App boot successfully.")
 
-	exitCh := make(chan os.Signal)
+	exitCh := make(chan os.Signal, 1)
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-exitCh
 
