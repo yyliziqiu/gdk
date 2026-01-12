@@ -6,7 +6,6 @@ import (
 
 	"github.com/yyliziqiu/gdk/xdb"
 	"github.com/yyliziqiu/gdk/xes"
-	"github.com/yyliziqiu/gdk/xkafka"
 	"github.com/yyliziqiu/gdk/xlog"
 	"github.com/yyliziqiu/gdk/xredis"
 	"github.com/yyliziqiu/gdk/xutil"
@@ -80,28 +79,6 @@ func InitBase(config any) InitFunc {
 			}
 		}
 
-		// kafka
-		if val, ok := xutil.AttemptReflectFieldValue(config, []string{"Kafka"}); ok {
-			c, ok2 := val.(xkafka.Config)
-			if ok2 && c.Server.BootstrapServers != "" {
-				xlog.Info("Init kafka.")
-				err = xkafka.Init(c)
-				if err != nil {
-					return fmt.Errorf("init kafka failed [%v]", err)
-				}
-			}
-		}
-		if val, ok := xutil.AttemptReflectFieldValue(config, []string{"Kafkas", "KafkaList"}); ok {
-			c, ok2 := val.([]xkafka.Config)
-			if ok2 && len(c) > 0 {
-				xlog.Info("Init kafka list.")
-				err = xkafka.Init(c...)
-				if err != nil {
-					return fmt.Errorf("init kafka list failed [%v]", err)
-				}
-			}
-		}
-
 		return nil
 	}
 }
@@ -113,7 +90,6 @@ func BootBase() BootFunc {
 			xdb.Finally()
 			xes.Finally()
 			xredis.Finally()
-			xkafka.Finally()
 		}()
 		return nil
 	}
