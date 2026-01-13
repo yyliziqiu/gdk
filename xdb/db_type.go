@@ -51,10 +51,10 @@ func (c Config) Default() Config {
 		c.MaxIdleConns = 10
 	}
 	if c.ConnMaxLifetime == 0 {
-		c.ConnMaxLifetime = time.Hour
+		c.ConnMaxLifetime = 24 * time.Hour
 	}
 	if c.ConnMaxIdleTime == 0 {
-		c.ConnMaxLifetime = 30 * time.Minute
+		c.ConnMaxIdleTime = 30 * time.Minute
 	}
 	if c.OrmLogLevel == 0 {
 		c.OrmLogLevel = 1
@@ -69,11 +69,12 @@ func (c Config) Default() Config {
 }
 
 func (c Config) OrmConfig() *gorm.Config {
-	config := ormlog.Config{
+	lc := ormlog.Config{
 		LogLevel:                  ormlog.LogLevel(c.OrmLogLevel),
 		SlowThreshold:             c.OrmLogSlowThreshold,
 		ParameterizedQueries:      c.OrmLogParameterizedQueries,
 		IgnoreRecordNotFoundError: c.OrmLogIgnoreRecordNotFoundError,
 	}
-	return &gorm.Config{Logger: ormlog.New(c.OrmLogger, config)}
+
+	return &gorm.Config{Logger: ormlog.New(c.OrmLogger, lc)}
 }
