@@ -94,13 +94,13 @@ func (c ConsumerConfig) Default() ConsumerConfig {
 		c.AutoOffsetReset = "latest"
 	}
 	if c.MaxPollIntervalMS == 0 {
-		c.MaxPollIntervalMS = 10000 // 10s
+		c.MaxPollIntervalMS = 30000 // 30s
 	}
 	if c.SessionTimeoutMS == 0 {
-		c.SessionTimeoutMS = 10000 // 10s
+		c.SessionTimeoutMS = 15000 // 15s
 	}
 	if c.HeartbeatIntervalMS == 0 {
-		c.HeartbeatIntervalMS = 3000 // 3s
+		c.HeartbeatIntervalMS = 5000 // 5s
 	}
 	if c.FetchMaxBytes == 0 {
 		c.FetchMaxBytes = 1024000 // 1M
