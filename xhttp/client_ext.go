@@ -13,7 +13,7 @@ func (c *Client) get2(method string, path string, header http.Header, out any) (
 		return nil, err
 	}
 
-	_, resbody, err := c.doRequest(req, out, nil, true)
+	_, resbody, err := c.doRequest(req, nil, out, true)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (c *Client) post2(method string, path string, header http.Header, in any, o
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	_, resbody, err := c.doRequest(req, out, reqbody, true)
+	_, resbody, err := c.doRequest(req, reqbody, out, true)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *Client) post3(method string, path string, header http.Header, in []byte
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	_, resbody, err := c.doRequest(req, out, in, true)
+	_, resbody, err := c.doRequest(req, in, out, true)
 	if err != nil {
 		return nil, err
 	}
