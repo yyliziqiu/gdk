@@ -425,7 +425,7 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 		return err
 	}
 
-	return err
+	return nil
 }
 
 // PostFile 上传文件
