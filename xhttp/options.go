@@ -87,15 +87,9 @@ func Dumps(enabled bool) Option {
 	}
 }
 
-func LogLength(n int) Option {
+func LogReplace(replacer *strings.Replacer) Option {
 	return func(cli *Client) {
-		cli.logLength = n
-	}
-}
-
-func LogHeader(enabled bool) Option {
-	return func(cli *Client) {
-		cli.logHeader = enabled
+		cli.logReplace = replacer
 	}
 }
 
@@ -105,9 +99,15 @@ func LogEscape(enabled bool) Option {
 	}
 }
 
-func Replacer(replacer *strings.Replacer) Option {
+func LogHeader(enabled bool) Option {
 	return func(cli *Client) {
-		cli.replacer = replacer
+		cli.logHeader = enabled
+	}
+}
+
+func LogLength(n int) Option {
+	return func(cli *Client) {
+		cli.logLength = n
 	}
 }
 

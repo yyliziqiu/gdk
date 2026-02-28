@@ -6,47 +6,54 @@ import (
 	"net/http/httputil"
 )
 
-func (c *Client) logRequest(req *http.Request, res *http.Response, reqBody []byte, resBody []byte, err error, cost string) {
+func (c *Client) logRequest(req *http.Request, status int, reqbody []byte, resbody []byte, err error, cost string) {
 	if c.logger == nil {
 		return
 	}
 
-	headers := "-"
+	headers := "_"
 	if c.logHeader {
 		headers = SerializeHeader(req.Header)
 	}
-	reqBy := string(reqBody)
-	resBy := string(resBody)
 
 	if err == nil {
-		c.logInfo(logFormat1, res.StatusCode, req.Method, req.URL, headers, reqBy, resBy, cost)
+		c.logInfo(logFormat1, status, req.Method, req.URL, headers, string(reqbody), string(resbody), cost)
 	} else {
-		c.logWarn(logFormat2, res.StatusCode, req.Method, req.URL, headers, reqBy, resBy, err, cost)
+		c.logInfo(logFormat2, status, req.Method, req.URL, headers, string(reqbody), string(resbody), err, cost)
 	}
 }
 
-func (c *Client) logInfo(format string, args ...interface{}) {
-	if c.logger != nil {
-		c.logger.Info(c.logPretty(fmt.Sprintf(format, args...)))
+func (c *Client) logInfo(format string, args ...any) {
+	if c.logger == nil {
+		return
 	}
+
+	c.logger.Info(c.logFormat(format, args...))
 }
 
-func (c *Client) logWarn(format string, args ...interface{}) {
-	if c.logger != nil {
-		c.logger.Warn(c.logPretty(fmt.Sprintf(format, args...)))
+func (c *Client) logWarn(format string, args ...any) {
+	if c.logger == nil {
+		return
 	}
+
+	c.logger.Warn(c.logFormat(format, args...))
 }
 
-func (c *Client) logPretty(msg string) string {
+func (c *Client) logFormat(format string, args ...any) string {
+	msg := fmt.Sprintf(format, args...)
+
 	if c.logLength <= 0 {
 		return ""
 	}
+
 	if len(msg) > c.logLength {
 		msg = msg[:c.logLength]
 	}
+
 	if c.logEscape {
-		msg = c.replacer.Replace(msg)
+		msg = c.logReplace.Replace(msg)
 	}
+
 	return msg
 }
 
@@ -54,26 +61,30 @@ func (c *Client) dumpRequest(req *http.Request) {
 	if !c.dumps {
 		return
 	}
+
 	bs, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
 		fmt.Printf("Dump request failed, error: %v\n", err)
 		return
 	}
-	fmt.Println("\n---------- Request Begin ----------")
+
+	fmt.Println("\n========== Request Begin ==========")
 	fmt.Print(string(bs))
-	fmt.Println("\n---------- Request End----------")
+	fmt.Println("\n========== Request End ==========")
 }
 
 func (c *Client) dumpResponse(res *http.Response) {
 	if !c.dumps {
 		return
 	}
+
 	bs, err := httputil.DumpResponse(res, true)
 	if err != nil {
 		fmt.Printf("Dump response failed, error: %v", err)
 		return
 	}
-	fmt.Println("\n---------- Response Begin----------")
+
+	fmt.Println("\n========== Response Begin ==========")
 	fmt.Print(string(bs))
-	fmt.Println("\n---------- Response End----------")
+	fmt.Println("\n========== Response End ==========")
 }

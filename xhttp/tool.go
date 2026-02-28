@@ -5,7 +5,14 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
+
+func DefaultClient() *http.Client {
+	return &http.Client{
+		Timeout: 5 * time.Second,
+	}
+}
 
 func JoinUrl(segments ...string) string {
 	if len(segments) == 0 {

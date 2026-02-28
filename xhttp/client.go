@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -29,30 +28,26 @@ type Client struct {
 	prefix        string                         // URL 前缀
 	error         error                          // 响应失败时的 JSON 结构。在响应成功和失败时 JSON 结构不一致时设置，不能是指针
 	dumps         bool                           // 将 HTTP 报文打印到控制台
-	logLength     int                            // 最大日志长度
-	logHeader     bool                           // 日志中是否保存请求头
+	logReplace    *strings.Replacer              // 字符替换器
 	logEscape     bool                           // 是否转换日志中的特殊字符
-	replacer      *strings.Replacer              // 字符替换器
+	logHeader     bool                           // 日志中是否保存请求头
+	logLength     int                            // 最大日志长度
 	requestBefore func(req *http.Request)        // 在发送请求前调用
 	responseAfter func(res *http.Response) error // 在接收响应后调用
 }
 
 func New(options ...Option) *Client {
-	cli := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
 	client := &Client{
-		client:    cli,
-		logger:    nil,
-		format:    FormatJson,
-		prefix:    "",
-		error:     nil,
-		dumps:     false,
-		logLength: 2048,
-		logHeader: false,
-		logEscape: false,
-		replacer:  _replacer,
+		client:     DefaultClient(),
+		logger:     nil,
+		format:     FormatJson,
+		prefix:     "",
+		error:      nil,
+		dumps:      false,
+		logReplace: _replacer,
+		logEscape:  false,
+		logHeader:  false,
+		logLength:  2048,
 	}
 
 	for _, option := range options {
@@ -62,25 +57,17 @@ func New(options ...Option) *Client {
 	return client
 }
 
-func (c *Client) get(method string, path string, query url.Values, header http.Header, out interface{}) error {
+func (c *Client) get(method string, path string, query url.Values, header http.Header, out any) error {
 	req, err := c.newRequest(method, path, query, header, nil)
 	if err != nil {
 		return err
 	}
 
-	timer := xtime.NewTimer()
-
-	res, err := c.doRequest(req)
-	if err != nil {
+	if _, _, err = c.doRequest(req, out, nil, true); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	body, err := c.handleResponse(res, out)
-
-	c.logRequest(req, res, nil, body, err, timer.Stops())
-
-	return err
+	return nil
 }
 
 func (c *Client) newRequest(method string, path string, query url.Values, header http.Header, body io.Reader) (*http.Request, error) {
@@ -100,9 +87,9 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 		return nil, fmt.Errorf("new request error [%v]", err)
 	}
 
-	for key, values := range header {
-		for _, value := range values {
-			req.Header.Add(key, value)
+	for k, vs := range header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
 		}
 	}
 
@@ -113,19 +100,30 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 	return req, nil
 }
 
-func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
+func (c *Client) doRequest(req *http.Request, out any, reqbody []byte, logResbody bool) (*http.Response, []byte, error) {
 	c.dumpRequest(req)
+
+	tim := xtime.NewTimer()
 
 	res, err := c.client.Do(req)
 	if err != nil {
 		c.logWarn("Do request failed, url: %s, error: %v.", req.URL, err)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return res, nil
+	resbody, err := c.handleResponse(res, out)
+	res.Body.Close()
+
+	if logResbody {
+		c.logRequest(req, res.StatusCode, reqbody, resbody, err, tim.Stops())
+	} else {
+		c.logRequest(req, res.StatusCode, reqbody, nil, err, tim.Stops())
+	}
+
+	return res, resbody, err
 }
 
-func (c *Client) handleResponse(res *http.Response, out interface{}) ([]byte, error) {
+func (c *Client) handleResponse(res *http.Response, out any) ([]byte, error) {
 	c.dumpResponse(res)
 
 	if c.responseAfter != nil {
@@ -148,47 +146,7 @@ func (c *Client) handleResponse(res *http.Response, out interface{}) ([]byte, er
 	}
 }
 
-func (c *Client) handleJsonResponse(statusCode int, body []byte, out interface{}) error {
-	if statusCode/100 == 2 {
-		if out != nil {
-			err := json.Unmarshal(body, out)
-			if err != nil {
-				return fmt.Errorf("unmarshal response error [%v]", err)
-			}
-			if jr, ok := out.(JsonResponse); ok {
-				if jr.Failed() {
-					err2, ok2 := out.(error)
-					if ok2 {
-						return err2
-					}
-					return newResponseError(statusCode, string(body))
-				}
-			}
-		}
-		return nil
-	} else if statusCode/100 == 3 {
-		return errors.New("this is a redirect response")
-	} else {
-		if c.error != nil {
-			ret := reflect.New(reflect.TypeOf(c.error)).Interface()
-			err := json.Unmarshal(body, ret)
-			if err == nil {
-				return ret.(error)
-			}
-		} else if out != nil {
-			err := json.Unmarshal(body, out)
-			if err == nil {
-				err2, ok2 := out.(error)
-				if ok2 {
-					return err2
-				}
-			}
-		}
-		return newResponseError(statusCode, string(body))
-	}
-}
-
-func (c *Client) handleTextResponse(statusCode int, body []byte, out interface{}) error {
+func (c *Client) handleTextResponse(statusCode int, body []byte, out any) error {
 	if statusCode/100 != 2 {
 		return newResponseError(statusCode, string(body))
 	}
@@ -206,34 +164,62 @@ func (c *Client) handleTextResponse(statusCode int, body []byte, out interface{}
 	return nil
 }
 
-func (c *Client) post(method string, path string, query url.Values, header http.Header, in interface{}, out interface{}) error {
+func (c *Client) handleJsonResponse(statusCode int, body []byte, out any) error {
+	if statusCode/100 == 2 {
+		if out != nil {
+			if err := json.Unmarshal(body, out); err != nil {
+				return fmt.Errorf("unmarshal response error [%v]", err)
+			}
+			if jr, ok := out.(JsonResponse); ok {
+				if jr.Failed() {
+					if err2, ok2 := out.(error); ok2 {
+						return err2
+					}
+					return newResponseError(statusCode, string(body))
+				}
+			}
+		}
+		return nil
+	} else if statusCode/100 == 3 {
+		return errors.New("this is a redirect response")
+	} else {
+		if c.error != nil {
+			ret := reflect.New(reflect.TypeOf(c.error)).Interface()
+			if err := json.Unmarshal(body, ret); err == nil {
+				return ret.(error)
+			}
+		} else if out != nil {
+			if err := json.Unmarshal(body, out); err == nil {
+				if err2, ok2 := out.(error); ok2 {
+					return err2
+				}
+			}
+		}
+		return newResponseError(statusCode, string(body))
+	}
+}
+
+func (c *Client) post(method string, path string, query url.Values, header http.Header, in any, out any) error {
 	if in == nil {
 		in = struct{}{}
 	}
-	reqBody, err := json.Marshal(in)
+
+	reqbody, err := json.Marshal(in)
 	if err != nil {
 		return fmt.Errorf("marshal request body error [%v]", err)
 	}
 
-	req, err := c.newRequest(method, path, query, header, bytes.NewReader(reqBody))
+	req, err := c.newRequest(method, path, query, header, bytes.NewReader(reqbody))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	timer := xtime.NewTimer()
-
-	res, err := c.doRequest(req)
-	if err != nil {
+	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	resBody, err := c.handleResponse(res, out)
-
-	c.logRequest(req, res, reqBody, resBody, err, timer.Stops())
-
-	return err
+	return nil
 }
 
 // Get http get
@@ -246,27 +232,27 @@ func (c *Client) post(method string, path string, query url.Values, header http.
 //  1. 若响应成功和失败时响应的结构一至
 //     1-1. 若要自定义错误内容，则 out 需要实现 error 接口，否则错误信息将返回整个响应内容
 //  2. 若响应成功和失败时响应的结构不一致，则需要设置 Error(err error) 选项，err 为响应失败时的结构，注意 err 不能是指针
-func (c *Client) Get(path string, query url.Values, header http.Header, out interface{}) error {
+func (c *Client) Get(path string, query url.Values, header http.Header, out any) error {
 	return c.get(http.MethodGet, path, query, header, out)
 }
 
 // Post http post
-func (c *Client) Post(path string, query url.Values, header http.Header, in interface{}, out interface{}) error {
+func (c *Client) Post(path string, query url.Values, header http.Header, in any, out any) error {
 	return c.post(http.MethodPost, path, query, header, in, out)
 }
 
 // Put http put
-func (c *Client) Put(path string, query url.Values, header http.Header, in interface{}, out interface{}) error {
+func (c *Client) Put(path string, query url.Values, header http.Header, in any, out any) error {
 	return c.post(http.MethodPut, path, query, header, in, out)
 }
 
 // Patch http patch
-func (c *Client) Patch(path string, query url.Values, header http.Header, in interface{}, out interface{}) error {
+func (c *Client) Patch(path string, query url.Values, header http.Header, in any, out any) error {
 	return c.post(http.MethodPatch, path, query, header, in, out)
 }
 
 // Delete http delete
-func (c *Client) Delete(path string, query url.Values, header http.Header, out interface{}) error {
+func (c *Client) Delete(path string, query url.Values, header http.Header, out any) error {
 	return c.get(http.MethodDelete, path, query, header, out)
 }
 
@@ -277,50 +263,35 @@ func (c *Client) GetBinary(path string, query url.Values, header http.Header) ([
 		return nil, "", err
 	}
 
-	timer := xtime.NewTimer()
-
-	res, err := c.doRequest(req)
+	res, resbody, err := c.doRequest(req, nil, nil, false)
 	if err != nil {
 		return nil, "", err
 	}
-	defer res.Body.Close()
 
-	dat, err := io.ReadAll(res.Body)
-	typ := res.Header.Get("Content-Type")
-
-	c.logRequest(req, res, nil, nil, err, timer.Stops())
-
-	return dat, typ, err
+	return resbody, res.Header.Get("Content-Type"), nil
 }
 
 // PostForm application/x-www-form-urlencoded 表单请求
-func (c *Client) PostForm(path string, query url.Values, header http.Header, in url.Values, out interface{}) error {
-	reqBody := in.Encode()
+func (c *Client) PostForm(path string, query url.Values, header http.Header, in url.Values, out any) error {
+	reqbody := in.Encode()
 
-	req, err := c.newRequest(http.MethodPost, path, query, header, strings.NewReader(reqBody))
+	req, err := c.newRequest(http.MethodPost, path, query, header, strings.NewReader(reqbody))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	timer := xtime.NewTimer()
+	reqbody2, _ := url.QueryUnescape(reqbody)
 
-	res, err := c.doRequest(req)
-	if err != nil {
+	if _, _, err = c.doRequest(req, out, []byte(reqbody2), true); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	resBody, err := c.handleResponse(res, out)
-
-	reqBody, _ = url.QueryUnescape(reqBody)
-	c.logRequest(req, res, []byte(reqBody), resBody, err, timer.Stops())
-
-	return err
+	return nil
 }
 
 // PostData multipart/form-data 表单请求
-func (c *Client) PostData(path string, query url.Values, header http.Header, values map[string]string, files map[string]string, out interface{}) error {
+func (c *Client) PostData(path string, query url.Values, header http.Header, values map[string]string, files map[string]string, out any) error {
 	var (
 		buf    bytes.Buffer
 		writer = multipart.NewWriter(&buf)
@@ -328,22 +299,19 @@ func (c *Client) PostData(path string, query url.Values, header http.Header, val
 
 	if len(values) > 0 {
 		for key, value := range values {
-			err := writer.WriteField(key, value)
-			if err != nil {
+			if err := writer.WriteField(key, value); err != nil {
 				return err
 			}
 		}
 	}
 	if len(files) > 0 {
 		for key, file := range files {
-			err := c.writeFormFile(writer, key, file)
-			if err != nil {
+			if err := c.writeFormFile(writer, key, file); err != nil {
 				return err
 			}
 		}
 	}
-	err := writer.Close()
-	if err != nil {
+	if err := writer.Close(); err != nil {
 		return err
 	}
 
@@ -353,34 +321,25 @@ func (c *Client) PostData(path string, query url.Values, header http.Header, val
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	timer := xtime.NewTimer()
+	cpy := make(map[string]string)
+	for key, val := range values {
+		cpy[key] = val
+	}
+	for key, file := range files {
+		cpy[key] = file
+	}
+	var reqbody []byte
+	if len(cpy) == 0 {
+		reqbody = []byte("{}")
+	} else {
+		reqbody, _ = json.Marshal(cpy)
+	}
 
-	res, err := c.doRequest(req)
-	if err != nil {
+	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	resBody, err := c.handleResponse(res, out)
-
-	var cpy map[string]string
-	var reqBody []byte
-	if len(values) > 0 {
-		cpy = values
-		for key, file := range files {
-			cpy[key] = file
-		}
-	} else {
-		cpy = files
-	}
-	if len(cpy) == 0 {
-		reqBody = []byte("{}")
-	} else {
-		reqBody, _ = json.Marshal(cpy)
-	}
-	c.logRequest(req, res, reqBody, resBody, err, timer.Stops())
-
-	return err
+	return nil
 }
 
 func (c *Client) writeFormFile(writer *multipart.Writer, key string, path string) error {
@@ -395,8 +354,7 @@ func (c *Client) writeFormFile(writer *multipart.Writer, key string, path string
 		return err
 	}
 
-	_, err = io.Copy(part, file)
-	if err != nil {
+	if _, err = io.Copy(part, file); err != nil {
 		return err
 	}
 
@@ -404,30 +362,22 @@ func (c *Client) writeFormFile(writer *multipart.Writer, key string, path string
 }
 
 // PostBinary 上传流数据
-func (c *Client) PostBinary(path string, query url.Values, header http.Header, mimeType string, in io.Reader, out interface{}) error {
+func (c *Client) PostBinary(path string, query url.Values, header http.Header, mimeType string, in io.Reader, out any) error {
 	req, err := c.newRequest(http.MethodPost, path, query, header, in)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", mimeType)
 
-	timer := xtime.NewTimer()
-
-	res, err := c.doRequest(req)
-	if err != nil {
+	if _, _, err = c.doRequest(req, out, nil, true); err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	resBody, err := c.handleResponse(res, out)
-
-	c.logRequest(req, res, nil, resBody, err, timer.Stops())
-
-	return err
+	return nil
 }
 
 // PostStream 以 multipart/form-data 形式上传流数据
-func (c *Client) PostStream(path string, query url.Values, header http.Header, values map[string]string, field string, filename string, mimeType string, stream io.Reader, out interface{}) error {
+func (c *Client) PostStream(path string, query url.Values, header http.Header, values map[string]string, field string, filename string, mimeType string, stream io.Reader, out any) error {
 	var (
 		buf    bytes.Buffer
 		writer = multipart.NewWriter(&buf)
@@ -435,8 +385,7 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 
 	if len(values) > 0 {
 		for key, value := range values {
-			err := writer.WriteField(key, value)
-			if err != nil {
+			if err := writer.WriteField(key, value); err != nil {
 				return err
 			}
 		}
@@ -452,14 +401,11 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(part, stream)
-		if err != nil {
+		if _, err = io.Copy(part, stream); err != nil {
 			return err
 		}
 	}
-
-	err := writer.Close()
-	if err != nil {
+	if err := writer.Close(); err != nil {
 		return err
 	}
 
@@ -469,36 +415,29 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	timer := xtime.NewTimer()
-
-	res, err := c.doRequest(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	resBody, err := c.handleResponse(res, out)
-
-	var reqBody []byte
+	var reqbody []byte
 	if len(values) == 0 {
-		reqBody = []byte(fmt.Sprintf(`{"%s":"%s"}`, field, filename))
+		reqbody = []byte(fmt.Sprintf(`{"%s":"%s"}`, field, filename))
 	} else {
 		values[field] = filename
-		reqBody, _ = json.Marshal(values)
+		reqbody, _ = json.Marshal(values)
 	}
-	c.logRequest(req, res, reqBody, resBody, err, timer.Stops())
+
+	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
+		return err
+	}
 
 	return err
 }
 
 // PostFile 上传文件
-func (c *Client) PostFile(path string, query url.Values, header http.Header, values map[string]string, field string, filepath string, out interface{}) error {
+func (c *Client) PostFile(path string, query url.Values, header http.Header, values map[string]string, field string, filepath string, out any) error {
 	files := map[string]string{field: filepath}
 	return c.PostData(path, query, header, values, files, out)
 }
 
 // ForwardBinary 转发二进制数据
-func (c *Client) ForwardBinary(path string, query url.Values, header http.Header, src string, out interface{}) error {
+func (c *Client) ForwardBinary(path string, query url.Values, header http.Header, src string, out any) error {
 	data, typ, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
@@ -507,7 +446,7 @@ func (c *Client) ForwardBinary(path string, query url.Values, header http.Header
 }
 
 // ForwardStream 以 multipart/form-data 形式转发流数据
-func (c *Client) ForwardStream(path string, query url.Values, header http.Header, values map[string]string, field string, mimeTyp string, src string, out interface{}) error {
+func (c *Client) ForwardStream(path string, query url.Values, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
 	data, _, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
