@@ -87,9 +87,9 @@ func Dumps(enabled bool) Option {
 	}
 }
 
-func LogReplace(replacer *strings.Replacer) Option {
+func LogChange(replacer *strings.Replacer) Option {
 	return func(cli *Client) {
-		cli.logReplace = replacer
+		cli.logChange = replacer
 	}
 }
 

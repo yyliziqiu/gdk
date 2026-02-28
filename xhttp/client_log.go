@@ -51,7 +51,7 @@ func (c *Client) logFormat(format string, args ...any) string {
 	}
 
 	if c.logEscape {
-		msg = c.logReplace.Replace(msg)
+		msg = c.logChange.Replace(msg)
 	}
 
 	return msg

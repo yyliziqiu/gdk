@@ -28,7 +28,7 @@ type Client struct {
 	prefix        string                         // URL 前缀
 	error         error                          // 响应失败时的 JSON 结构。在响应成功和失败时 JSON 结构不一致时设置，不能是指针
 	dumps         bool                           // 将 HTTP 报文打印到控制台
-	logReplace    *strings.Replacer              // 字符替换器
+	logChange     *strings.Replacer              // 字符替换器
 	logEscape     bool                           // 是否转换日志中的特殊字符
 	logHeader     bool                           // 日志中是否保存请求头
 	logLength     int                            // 最大日志长度
@@ -38,16 +38,16 @@ type Client struct {
 
 func New(options ...Option) *Client {
 	client := &Client{
-		client:     DefaultClient(),
-		logger:     nil,
-		format:     FormatJson,
-		prefix:     "",
-		error:      nil,
-		dumps:      false,
-		logReplace: _replacer,
-		logEscape:  false,
-		logHeader:  false,
-		logLength:  2048,
+		client:    DefaultClient(),
+		logger:    nil,
+		format:    FormatJson,
+		prefix:    "",
+		error:     nil,
+		dumps:     false,
+		logChange: _replacer,
+		logEscape: false,
+		logHeader: false,
+		logLength: 2048,
 	}
 
 	for _, option := range options {
