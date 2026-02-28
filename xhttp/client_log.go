@@ -6,7 +6,7 @@ import (
 	"net/http/httputil"
 )
 
-func (c *Client) logRequest(req *http.Request, status int, reqbody []byte, resbody []byte, err error, cost string) {
+func (c *Client) logRequest(req *http.Request, reqbody []byte, status int, resbody []byte, err error, cost string) {
 	if c.logger == nil {
 		return
 	}

@@ -63,7 +63,7 @@ func (c *Client) get(method string, path string, query url.Values, header http.H
 		return err
 	}
 
-	if _, _, err = c.doRequest(req, out, nil, true); err != nil {
+	if _, _, err = c.doRequest(req, nil, out, true); err != nil {
 		return err
 	}
 
@@ -100,7 +100,7 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 	return req, nil
 }
 
-func (c *Client) doRequest(req *http.Request, out any, reqbody []byte, logResbody bool) (*http.Response, []byte, error) {
+func (c *Client) doRequest(req *http.Request, reqbody []byte, out any, logResbody bool) (*http.Response, []byte, error) {
 	c.dumpRequest(req)
 
 	tim := xtime.NewTimer()
@@ -115,9 +115,9 @@ func (c *Client) doRequest(req *http.Request, out any, reqbody []byte, logResbod
 	res.Body.Close()
 
 	if logResbody {
-		c.logRequest(req, res.StatusCode, reqbody, resbody, err, tim.Stops())
+		c.logRequest(req, reqbody, res.StatusCode, resbody, err, tim.Stops())
 	} else {
-		c.logRequest(req, res.StatusCode, reqbody, nil, err, tim.Stops())
+		c.logRequest(req, reqbody, res.StatusCode, nil, err, tim.Stops())
 	}
 
 	return res, resbody, err
@@ -215,7 +215,7 @@ func (c *Client) post(method string, path string, query url.Values, header http.
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
+	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
 		return err
 	}
 
@@ -283,7 +283,7 @@ func (c *Client) PostForm(path string, query url.Values, header http.Header, in 
 
 	reqbody2, _ := url.QueryUnescape(reqbody)
 
-	if _, _, err = c.doRequest(req, out, []byte(reqbody2), true); err != nil {
+	if _, _, err = c.doRequest(req, []byte(reqbody2), out, true); err != nil {
 		return err
 	}
 
@@ -335,7 +335,7 @@ func (c *Client) PostData(path string, query url.Values, header http.Header, val
 		reqbody, _ = json.Marshal(cpy)
 	}
 
-	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
+	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
 		return err
 	}
 
@@ -369,7 +369,7 @@ func (c *Client) PostBinary(path string, query url.Values, header http.Header, m
 	}
 	req.Header.Set("Content-Type", mimeType)
 
-	if _, _, err = c.doRequest(req, out, nil, true); err != nil {
+	if _, _, err = c.doRequest(req, nil, out, true); err != nil {
 		return err
 	}
 
@@ -423,7 +423,7 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 		reqbody, _ = json.Marshal(values)
 	}
 
-	if _, _, err = c.doRequest(req, out, reqbody, true); err != nil {
+	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
 		return err
 	}
 
