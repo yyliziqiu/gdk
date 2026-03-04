@@ -144,9 +144,9 @@ func (c *Client) handleResponse(res *http.Response, out any) ([]byte, error) {
 	}
 }
 
-func (c *Client) handleTextResponse(statusCode int, body []byte, out any) error {
-	if statusCode/100 != 2 {
-		return newResponseError(statusCode, string(body))
+func (c *Client) handleTextResponse(status int, body []byte, out any) error {
+	if status/100 != 2 {
+		return newResponseError(status, string(body))
 	}
 
 	if out == nil {
@@ -162,8 +162,8 @@ func (c *Client) handleTextResponse(statusCode int, body []byte, out any) error 
 	return nil
 }
 
-func (c *Client) handleJsonResponse(statusCode int, body []byte, out any) error {
-	if statusCode/100 == 2 {
+func (c *Client) handleJsonResponse(status int, body []byte, out any) error {
+	if status/100 == 2 {
 		if out != nil {
 			if err := json.Unmarshal(body, out); err != nil {
 				return fmt.Errorf("unmarshal response error [%v]", err)
@@ -173,12 +173,12 @@ func (c *Client) handleJsonResponse(statusCode int, body []byte, out any) error 
 					if err2, ok2 := out.(error); ok2 {
 						return err2
 					}
-					return newResponseError(statusCode, string(body))
+					return newResponseError(status, string(body))
 				}
 			}
 		}
 		return nil
-	} else if statusCode/100 == 3 {
+	} else if status/100 == 3 {
 		return errors.New("this is a redirect response")
 	} else {
 		if c.error != nil {
@@ -193,7 +193,7 @@ func (c *Client) handleJsonResponse(statusCode int, body []byte, out any) error 
 				}
 			}
 		}
-		return newResponseError(statusCode, string(body))
+		return newResponseError(status, string(body))
 	}
 }
 
@@ -266,7 +266,9 @@ func (c *Client) GetBinary(path string, query url.Values, header http.Header) ([
 		return nil, "", err
 	}
 
-	return resbody, res.Header.Get("Content-Type"), nil
+	restype := res.Header.Get("Content-Type")
+
+	return resbody, restype, nil
 }
 
 // PostForm application/x-www-form-urlencoded 表单请求
