@@ -382,7 +382,17 @@ func (c *Client) PostBinary(path string, header http.Header, mimeType string, in
 
 // PostJson 上传 JSON 字节数组
 func (c *Client) PostJson(path string, header http.Header, in []byte, out any) error {
-	return c.PostBinary(path, header, "application/json", bytes.NewReader(in), out)
+	req, err := c.newRequest(http.MethodPost, path, nil, header, bytes.NewReader(in))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	if _, _, err = c.doRequest(req, in, out, true); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // PostStream 以 multipart/form-data 形式上传流数据
