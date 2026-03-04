@@ -380,6 +380,7 @@ func (c *Client) PostBinary(path string, header http.Header, mimeType string, in
 	return nil
 }
 
+// PostJson 上传 JSON 字节数组
 func (c *Client) PostJson(path string, header http.Header, in []byte, out any) error {
 	return c.PostBinary(path, header, "application/json", bytes.NewReader(in), out)
 }
