@@ -72,16 +72,13 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 	if !strings.HasPrefix(path, "http://") && !strings.HasPrefix(path, "https://") {
 		path = JoinUrl(c.prefix, path)
 	}
-
-	url2, err := AppendQuery(path, query)
-	if err != nil {
-		c.logWarn("Append query failed, url: %s, query: %s, error: %v.", url2, query.Encode(), err)
-		return nil, fmt.Errorf("append query error [%v]", err)
+	if len(query) > 0 {
+		path = AppendQuery(path, query)
 	}
 
-	req, err := http.NewRequest(method, url2, body)
+	req, err := http.NewRequest(method, path, body)
 	if err != nil {
-		c.logWarn("New request failed, url: %s, error: %v.", url2, err)
+		c.logWarn("New request failed, url: %s, error: %v.", path, err)
 		return nil, fmt.Errorf("new request error [%v]", err)
 	}
 
@@ -163,6 +160,10 @@ func (c *Client) handleTextResponse(status int, body []byte, out any) error {
 }
 
 func (c *Client) handleJsonResponse(status int, body []byte, out any) error {
+	if status/100 == 1 {
+		return nil
+	}
+
 	if status/100 == 2 {
 		if out != nil {
 			if err := json.Unmarshal(body, out); err != nil {
@@ -178,23 +179,26 @@ func (c *Client) handleJsonResponse(status int, body []byte, out any) error {
 			}
 		}
 		return nil
-	} else if status/100 == 3 {
+	}
+
+	if status/100 == 3 {
 		return errors.New("this is a redirect response")
-	} else {
-		if c.error != nil {
-			ret := reflect.New(reflect.TypeOf(c.error)).Interface()
-			if err := json.Unmarshal(body, ret); err == nil {
-				return ret.(error)
-			}
-		} else if out != nil {
-			if err := json.Unmarshal(body, out); err == nil {
-				if err2, ok2 := out.(error); ok2 {
-					return err2
-				}
+	}
+
+	if c.error != nil {
+		ret := reflect.New(reflect.TypeOf(c.error)).Interface()
+		if err := json.Unmarshal(body, ret); err == nil {
+			return ret.(error)
+		}
+	} else if out != nil {
+		if err := json.Unmarshal(body, out); err == nil {
+			if err2, ok2 := out.(error); ok2 {
+				return err2
 			}
 		}
-		return newResponseError(status, string(body))
 	}
+
+	return newResponseError(status, string(body))
 }
 
 func (c *Client) post(method string, path string, query url.Values, header http.Header, in any, out any) error {
@@ -272,10 +276,10 @@ func (c *Client) GetBinary(path string, query url.Values, header http.Header) ([
 }
 
 // PostForm application/x-www-form-urlencoded 表单请求
-func (c *Client) PostForm(path string, query url.Values, header http.Header, in url.Values, out any) error {
+func (c *Client) PostForm(path string, header http.Header, in url.Values, out any) error {
 	reqbody := in.Encode()
 
-	req, err := c.newRequest(http.MethodPost, path, query, header, strings.NewReader(reqbody))
+	req, err := c.newRequest(http.MethodPost, path, nil, header, strings.NewReader(reqbody))
 	if err != nil {
 		return err
 	}
@@ -291,7 +295,7 @@ func (c *Client) PostForm(path string, query url.Values, header http.Header, in 
 }
 
 // PostData multipart/form-data 表单请求
-func (c *Client) PostData(path string, query url.Values, header http.Header, values map[string]string, files map[string]string, out any) error {
+func (c *Client) PostData(path string, header http.Header, values map[string]string, files map[string]string, out any) error {
 	var (
 		buf    bytes.Buffer
 		writer = multipart.NewWriter(&buf)
@@ -315,7 +319,7 @@ func (c *Client) PostData(path string, query url.Values, header http.Header, val
 		return err
 	}
 
-	req, err := c.newRequest(http.MethodPost, path, query, header, &buf)
+	req, err := c.newRequest(http.MethodPost, path, nil, header, &buf)
 	if err != nil {
 		return err
 	}
@@ -362,8 +366,8 @@ func (c *Client) writeFormFile(writer *multipart.Writer, key string, path string
 }
 
 // PostBinary 上传流数据
-func (c *Client) PostBinary(path string, query url.Values, header http.Header, mimeType string, in io.Reader, out any) error {
-	req, err := c.newRequest(http.MethodPost, path, query, header, in)
+func (c *Client) PostBinary(path string, header http.Header, mimeType string, in io.Reader, out any) error {
+	req, err := c.newRequest(http.MethodPost, path, nil, header, in)
 	if err != nil {
 		return err
 	}
@@ -376,8 +380,12 @@ func (c *Client) PostBinary(path string, query url.Values, header http.Header, m
 	return nil
 }
 
+func (c *Client) PostJson(path string, header http.Header, in []byte, out any) error {
+	return c.PostBinary(path, header, "application/json", bytes.NewReader(in), out)
+}
+
 // PostStream 以 multipart/form-data 形式上传流数据
-func (c *Client) PostStream(path string, query url.Values, header http.Header, values map[string]string, field string, filename string, mimeType string, stream io.Reader, out any) error {
+func (c *Client) PostStream(path string, header http.Header, values map[string]string, field string, filename string, mimeType string, stream io.Reader, out any) error {
 	var (
 		buf    bytes.Buffer
 		writer = multipart.NewWriter(&buf)
@@ -409,7 +417,7 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 		return err
 	}
 
-	req, err := c.newRequest(http.MethodPost, path, query, header, &buf)
+	req, err := c.newRequest(http.MethodPost, path, nil, header, &buf)
 	if err != nil {
 		return err
 	}
@@ -431,25 +439,25 @@ func (c *Client) PostStream(path string, query url.Values, header http.Header, v
 }
 
 // PostFile 上传文件
-func (c *Client) PostFile(path string, query url.Values, header http.Header, values map[string]string, field string, filepath string, out any) error {
+func (c *Client) PostFile(path string, header http.Header, values map[string]string, field string, filepath string, out any) error {
 	files := map[string]string{field: filepath}
-	return c.PostData(path, query, header, values, files, out)
+	return c.PostData(path, header, values, files, out)
 }
 
 // ForwardBinary 转发二进制数据
-func (c *Client) ForwardBinary(path string, query url.Values, header http.Header, src string, out any) error {
+func (c *Client) ForwardBinary(path string, header http.Header, src string, out any) error {
 	data, typ, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
 	}
-	return c.PostBinary(path, query, header, typ, bytes.NewReader(data), out)
+	return c.PostBinary(path, header, typ, bytes.NewReader(data), out)
 }
 
 // ForwardStream 以 multipart/form-data 形式转发流数据
-func (c *Client) ForwardStream(path string, query url.Values, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
+func (c *Client) ForwardStream(path string, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
 	data, _, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
 	}
-	return c.PostStream(path, query, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
+	return c.PostStream(path, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
 }

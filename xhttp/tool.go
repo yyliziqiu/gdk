@@ -14,53 +14,74 @@ func DefaultClient() *http.Client {
 	}
 }
 
-func JoinUrl(segments ...string) string {
+func JoinUrl(prefix string, suffix string) string {
+	if suffix == "" {
+		return prefix
+	}
+
+	l := strings.HasSuffix(prefix, "/")
+	r := strings.HasPrefix(suffix, "/")
+
+	if l && r {
+		if len(suffix) < 2 {
+			return prefix
+		}
+		return prefix + suffix[1:]
+	}
+
+	if l || r {
+		return prefix + suffix
+	}
+
+	return prefix + "/" + suffix
+}
+
+func JoinUrls(segments ...string) string {
 	if len(segments) == 0 {
 		return ""
 	}
 
-	url2 := segments[0]
-	for i, segment := range segments {
-		if i == 0 || segment == "" {
-			continue
-		} else {
-			l := strings.HasSuffix(url2, "/")
-			r := strings.HasPrefix(segment, "/")
+	rurl := segments[0]
+	for i, seg := range segments {
+		if i > 0 && seg != "" {
+			l := strings.HasSuffix(rurl, "/")
+			r := strings.HasPrefix(seg, "/")
 			if l && r {
-				url2 += segment[1:]
+				if len(seg) > 1 {
+					rurl += seg[1:]
+				}
 			} else if l || r {
-				url2 += segment
+				rurl += seg
 			} else {
-				url2 += "/" + segment
+				rurl += "/" + seg
 			}
 		}
 	}
 
-	return url2
+	return rurl
 }
 
-func AppendQuery(rawUrl string, query url.Values) (string, error) {
-	if len(query) == 0 {
-		return rawUrl, nil
-	}
-
-	uo, err := url.Parse(rawUrl)
+func AppendQuery(rurl string, query url.Values) string {
+	parsed, err := url.Parse(rurl)
 	if err != nil {
-		return "", err
+		if strings.Contains(rurl, "?") {
+			return rurl + "&" + query.Encode()
+		}
+		return rurl + "?" + query.Encode()
 	}
 
-	for k, v := range uo.Query() {
+	for k, v := range parsed.Query() {
 		for _, s := range v {
 			query.Add(k, s)
 		}
 	}
 
-	uo.RawQuery = query.Encode()
+	parsed.RawQuery = query.Encode()
 
-	return uo.String(), nil
+	return parsed.String()
 }
 
-func SerializeHeader(header http.Header) string {
+func SerialHeader(header http.Header) string {
 	if len(header) == 0 {
 		return "{}"
 	}

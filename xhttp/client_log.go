@@ -13,7 +13,7 @@ func (c *Client) logRequest(req *http.Request, reqbody []byte, status int, resbo
 
 	headers := "_"
 	if c.logHeader {
-		headers = SerializeHeader(req.Header)
+		headers = SerialHeader(req.Header)
 	}
 
 	if err == nil {
