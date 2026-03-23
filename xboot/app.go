@@ -29,10 +29,8 @@ type App struct {
 	// 是否自动初始化基础组件
 	Components bool
 
-	// 初始化模块
+	// 初始化/启动模块
 	InitFuncs InitFuncs
-
-	// 启动模块
 	BootFuncs BootFuncs
 
 	// 保证只初始化一次
@@ -45,6 +43,7 @@ func (t *App) Init() error {
 	if err := t.InitConfig(); err != nil {
 		return err
 	}
+	xlog.Infof("App version: %s", t.Version)
 	return t.InitModule()
 }
 

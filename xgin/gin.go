@@ -25,12 +25,12 @@ func Run(conf Config, routes ...func(engine *gin.Engine)) (err error) {
 	gin.DisableConsoleColor()
 
 	// 错误日志设置
-	gin.DefaultErrorWriter = logger1().WriterLevel(logrus.WarnLevel)
+	gin.DefaultErrorWriter = log1().WriterLevel(logrus.WarnLevel)
 
 	// 访问日志设置
 	gin.DefaultWriter = io.Discard
 	if !conf.DisableAccessLog {
-		gin.DefaultWriter = logger2().Writer()
+		gin.DefaultWriter = log2().Writer()
 	}
 
 	// 创建 gin 实例
@@ -61,14 +61,14 @@ func Run(conf Config, routes ...func(engine *gin.Engine)) (err error) {
 	return err
 }
 
-func logger1() *logrus.Logger {
+func log1() *logrus.Logger {
 	if _log1 == nil {
 		_log1 = xlog.New3("gin")
 	}
 	return _log1
 }
 
-func logger2() *logrus.Logger {
+func log2() *logrus.Logger {
 	if _log2 == nil {
 		_log2 = xlog.New3("gin-access")
 	}
@@ -88,9 +88,9 @@ func recovery(ctx *gin.Context, err interface{}) {
 }
 
 func GetLogger() *logrus.Logger {
-	return logger1()
+	return log1()
 }
 
-func SetLogger(logger *logrus.Logger) {
-	_log1 = logger
+func SetLogger(log1 *logrus.Logger) {
+	_log1 = log1
 }

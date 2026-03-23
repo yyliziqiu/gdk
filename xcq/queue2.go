@@ -275,14 +275,12 @@ func (q *Queue) LoadSnap(item any) error {
 
 	lst := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(item)), 0, 0)
 	lsp := reflect.New(lst.Type())
-
 	if err = xsnap.Load(q.path, lsp.Interface()); err != nil {
 		return err
 	}
 
 	size := lsp.Elem().Len()
 	data := lsp.Elem().Slice(0, size)
-
 	var list []any
 	for i := 0; i < size; i++ {
 		list = append(list, data.Index(i).Interface())

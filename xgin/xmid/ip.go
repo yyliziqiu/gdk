@@ -31,7 +31,6 @@ func CheckIp(ips []string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// ip := ctx.RemoteIP() // 这个 ip 地址是客户端与服务器建立 tcp 连接时的原始 ip
 		// ip := ctx.ClientIP() // 先检查 X-Forwarded-For、X-Real-IP 等 header，如果没有代理信息或代理不受信任则退回到 RemoteIP()
-
 		ip := ctx.RemoteIP()
 
 		iv, err := ip2int(ip)

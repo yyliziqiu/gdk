@@ -14,8 +14,7 @@ type InitFuncs []InitFunc
 func (list InitFuncs) Init() error {
 	for _, fun := range list {
 		xlog.Infof("Init module: %s", xutil.ReflectFuncName(fun))
-		err := fun()
-		if err != nil {
+		if err := fun(); err != nil {
 			return err
 		}
 	}
@@ -29,8 +28,7 @@ type BootFuncs []BootFunc
 func (list BootFuncs) Boot(ctx context.Context) error {
 	for _, fun := range list {
 		xlog.Infof("Boot module: %s", xutil.ReflectFuncName(fun))
-		err := fun(ctx)
-		if err != nil {
+		if err := fun(ctx); err != nil {
 			return err
 		}
 	}

@@ -18,18 +18,18 @@ type Migration struct {
 	Cron []schema.Tabler
 }
 
-func Migrates(ctx context.Context, migrations []Migration) (err error) {
+func Migrates(ctx context.Context, migrations []Migration) error {
 	for _, migration := range migrations {
-		if err = Migrate(ctx, migration); err != nil {
+		if err := Migrate(ctx, migration); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func Migrate(ctx context.Context, migration Migration) (err error) {
+func Migrate(ctx context.Context, migration Migration) error {
 	db := migration.Db.Set("gorm:table_options", "ENGINE=InnoDB")
-	if err = migrateTables(db, migration.Once); err != nil {
+	if err := migrateTables(db, migration.Once); err != nil {
 		return fmt.Errorf("migrate once tables failed [%v]", err)
 	}
 
@@ -37,7 +37,7 @@ func Migrate(ctx context.Context, migration Migration) (err error) {
 		return nil
 	}
 
-	if err = migrateTables(db, migration.Cron); err != nil {
+	if err := migrateTables(db, migration.Cron); err != nil {
 		return fmt.Errorf("migrate cron tables failed [%v]", err)
 	}
 	go runMigrateCronTables(ctx, db, migration.Cron, migration.Poll)
