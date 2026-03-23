@@ -98,7 +98,9 @@ func (t *App) InitModule() error {
 	t.hasInitModule = true
 
 	if t.Components {
-		InitComponents(t.Config)
+		if err := InitComponents(t.Config)(); err != nil {
+			return err
+		}
 	}
 
 	if err := t.InitFuncs.Init(); err != nil {
