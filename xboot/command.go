@@ -8,17 +8,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var _rootCommand *cobra.Command
+type CommandConfig struct {
+	Name string
+	Desc string
+	Long string
+	Func func(cmd *cobra.Command, args []string)
+}
+
+var _root *cobra.Command
+
+func ExecuteCommands(app *App, f func(app *App) []*CommandConfig) {
+	initRootCommand(app)
+	configs := f(app)
+	for _, cfg := range configs {
+		if cfg.Long == "" {
+			cfg.Long = cfg.Desc
+		}
+		_root.AddCommand(&cobra.Command{
+			Use:   cfg.Name,
+			Short: cfg.Desc,
+			Long:  cfg.Long,
+			Run:   cfg.Func,
+		})
+	}
+
+	if err := _root.Execute(); err != nil {
+		fmt.Printf("Execute command failed, error: %v.", err)
+		os.Exit(1)
+	}
+}
 
 func ExecuteCommand(app *App, commands ...func(app *App) *cobra.Command) {
 	initRootCommand(app)
-
-	for _, command := range commands {
-		_rootCommand.AddCommand(command(app))
+	for _, cmd := range commands {
+		_root.AddCommand(cmd(app))
 	}
 
-	err := _rootCommand.Execute()
-	if err != nil {
+	if err := _root.Execute(); err != nil {
 		fmt.Printf("Execute command failed, error: %v.", err)
 		os.Exit(1)
 	}
@@ -27,23 +53,24 @@ func ExecuteCommand(app *App, commands ...func(app *App) *cobra.Command) {
 func initRootCommand(app *App) {
 	var config string
 
-	_rootCommand = &cobra.Command{
+	_root = &cobra.Command{
 		Version: app.Version,
-		Use:     app.Name,
-		Run: func(command *cobra.Command, args []string) {
-			fmt.Printf("Use %s.bin -h or --help for help.\n", app.Name)
+		Use:     app.Command,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("Use %s.bin -h or --help for help.\n", app.Command)
 		},
-		PersistentPreRun: func(command *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// 覆盖配置文件路径
 			if strings.TrimSpace(config) != "" {
-				app.ConfigPath = config
+				app.ConfigFile = config
 			}
-			err := app.InitConfig()
-			if err != nil {
+			// 初始化配置
+			if err := app.InitConfig(); err != nil {
 				fmt.Printf("Init config failed, error: %v\n", err)
 				os.Exit(1)
 			}
 		},
 	}
 
-	_rootCommand.PersistentFlags().StringVarP(&config, "config", "c", "", "config file path")
+	_root.PersistentFlags().StringVarP(&config, "config", "c", "", "config file path")
 }

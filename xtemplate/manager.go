@@ -118,19 +118,15 @@ func (mg *Manager) HtmlGin(ctx *gin.Context, code int, name string, data any) {
 		return
 	}
 
-	errorCode := http.StatusInternalServerError
-
-	ctx.Status(errorCode)
-	err = mg.Html(ctx.Writer, mg.errorTemplateName, err.Error())
-	if err != nil {
-		ctx.String(errorCode, "%v", err)
+	ctx.Status(http.StatusInternalServerError)
+	if serr := mg.Html(ctx.Writer, mg.errorTemplateName, err.Error()); serr != nil {
+		ctx.String(http.StatusInternalServerError, "%v", serr)
 	}
 }
 
 // PrintDefinedTemplates 输出所有模板名称，调试用
 func (mg *Manager) PrintDefinedTemplates() {
-	names := mg.DefinedTemplates()
-	for _, name := range names {
+	for _, name := range mg.DefinedTemplates() {
 		fmt.Println(name)
 	}
 }
@@ -138,16 +134,13 @@ func (mg *Manager) PrintDefinedTemplates() {
 // DefinedTemplates 获取所有模板名称，调试用
 func (mg *Manager) DefinedTemplates() []string {
 	names := make([]string, 0)
-
 	names = append(names, mg.promoteDefinedTemplates(
 		mg.baseTemplates.Name(),
 		mg.baseTemplates.DefinedTemplates()),
 	)
-
 	for s, t := range mg.htmlTemplates {
 		names = append(names, mg.promoteDefinedTemplates(s, t.DefinedTemplates()))
 	}
-
 	return names
 }
 

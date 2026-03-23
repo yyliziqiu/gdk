@@ -29,7 +29,6 @@ func RunCronTasks(ctx context.Context, tasks []CronTask, loc *time.Location) {
 	}
 
 	runner := cron.New(cron.WithSeconds(), cron.WithLocation(loc))
-
 	for _, task := range tasks {
 		if task.Spec == "" {
 			continue

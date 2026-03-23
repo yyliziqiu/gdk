@@ -59,8 +59,7 @@ func (s *Snap) Dup() error {
 
 // Save 保存快照
 func Save(path string, data interface{}) error {
-	err := xfile.MakeDir(filepath.Dir(path))
-	if err != nil {
+	if err := xfile.MakeDir(filepath.Dir(path)); err != nil {
 		return fmt.Errorf("mkdir snap dir %s failed [%v]", filepath.Dir(path), err)
 	}
 
@@ -70,12 +69,10 @@ func Save(path string, data interface{}) error {
 	}
 
 	temp := path + ".temp"
-	err = os.WriteFile(temp, bytes, 0644)
-	if err != nil {
+	if err = os.WriteFile(temp, bytes, 0644); err != nil {
 		return fmt.Errorf("save snap data %s failed [%v]", path, err)
 	}
-	err = os.Rename(temp, path)
-	if err != nil {
+	if err = os.Rename(temp, path); err != nil {
 		return fmt.Errorf("rename snap file %s failed [%v]", path, err)
 	}
 

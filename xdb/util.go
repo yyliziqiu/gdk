@@ -34,7 +34,7 @@ func IsPgsqlDuplicateKeyError(err error) bool {
 	return err2.Code == "23505"
 }
 
-func JoinIntValue(values []int) string {
+func JoinValueInt(values []int) string {
 	length := len(values)
 	if length == 0 {
 		return ""
@@ -48,23 +48,22 @@ func JoinIntValue(values []int) string {
 	return sb.String()
 }
 
-func JoinStringValue(values []string) string {
-	length := len(values)
-	if length == 0 {
+func JoinValueString(values []string) string {
+	if len(values) == 0 {
 		return ""
 	}
 	return "'" + strings.Join(values, "', '") + "'"
 }
 
-func SafeJoinStingValue(values []string) string {
+func JoinValueEscapedSting(values []string) string {
 	length := len(values)
 	for i := 0; i < length; i++ {
-		values[i] = EscapeString(values[i])
+		values[i] = Escape(values[i])
 	}
-	return JoinStringValue(values)
+	return JoinValueString(values)
 }
 
-func EscapeString(str string) string {
+func Escape(str string) string {
 	chars := []rune(str)
 	temp := make([]rune, 0, len(chars))
 	for _, c := range chars {

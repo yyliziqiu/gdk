@@ -75,6 +75,5 @@ func (c Config) OrmConfig() *gorm.Config {
 		ParameterizedQueries:      c.OrmLogParameterizedQueries,
 		IgnoreRecordNotFoundError: c.OrmLogIgnoreRecordNotFoundError,
 	}
-
 	return &gorm.Config{Logger: ormlog.New(c.OrmLogger, lc)}
 }

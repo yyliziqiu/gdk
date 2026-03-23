@@ -3,13 +3,13 @@ package xgin
 type Config struct {
 	Listen           string
 	KeyFile          string
-	CertFile         string
+	CrtFile          string
 	DisableAccessLog bool
 }
 
 func (c Config) Default() Config {
 	if c.Listen == "" {
-		if c.TlsEnabled() {
+		if c.CanTls() {
 			c.Listen = ":443"
 		} else {
 			c.Listen = ":80"
@@ -18,6 +18,6 @@ func (c Config) Default() Config {
 	return c
 }
 
-func (c Config) TlsEnabled() bool {
-	return c.KeyFile != "" && c.CertFile != ""
+func (c Config) CanTls() bool {
+	return c.KeyFile != "" && c.CrtFile != ""
 }

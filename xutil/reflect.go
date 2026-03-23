@@ -12,65 +12,83 @@ var FuncNamePrefixes []string
 // ReflectFuncName 通过反射获取方法名称
 func ReflectFuncName(f any) string {
 	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer())
-	name := strings.Split(pc.Name(), "-")[0]
-
+	pn := strings.Split(pc.Name(), "-")[0]
 	for _, prefix := range FuncNamePrefixes {
-		if strings.HasPrefix(name, prefix) {
-			return strings.TrimPrefix(name, prefix)
+		if strings.HasPrefix(pn, prefix) {
+			return strings.TrimPrefix(pn, prefix)
 		}
 	}
-
-	return name
+	return pn
 }
 
-// ReflectFieldList 通过反射获取指定结构体所有字段名
-func ReflectFieldList(s any) []string {
-	mt := reflect.TypeOf(s)
-	var fields []string
-	for i := 0; i < mt.NumField(); i++ {
-		fields = append(fields, mt.Field(i).Name)
+// ReflectFields 通过反射获取指定结构体所有字段名
+func ReflectFields(s any) []string {
+	st := reflect.TypeOf(s)
+	var fns []string
+	for i := 0; i < st.NumField(); i++ {
+		fns = append(fns, st.Field(i).Name)
 	}
-	return fields
+	return fns
 }
 
-// ReflectValueList 通过反射获取指定结构体所有字段值
-func ReflectValueList(s any) []any {
-	mv := reflect.ValueOf(s)
-	var values []any
-	for i := 0; i < mv.NumField(); i++ {
-		values = append(values, mv.Field(i).Interface())
+// ReflectValues 通过反射获取指定结构体所有字段值
+func ReflectValues(s any) []any {
+	sv := reflect.ValueOf(s)
+	var vs []any
+	for i := 0; i < sv.NumField(); i++ {
+		vs = append(vs, sv.Field(i).Interface())
 	}
-	return values
+	return vs
 }
 
-// ReflectValueStringList 通过反射获取指定结构体所有字段值的字符串形式
-func ReflectValueStringList(s any) []string {
-	var values []string
-	for _, v := range ReflectValueList(s) {
-		values = append(values, fmt.Sprintf("%v", v))
+// ReflectValuesToString 通过反射获取指定结构体所有字段值的字符串形式
+func ReflectValuesToString(s any) []string {
+	var vs []string
+	for _, v := range ReflectValues(s) {
+		vs = append(vs, fmt.Sprintf("%v", v))
 	}
-	return values
+	return vs
 }
 
-// ReflectFieldValue 获取指定结构体指定字段的值
-func ReflectFieldValue(s any, fn string) (any, bool) {
-	val := reflect.ValueOf(s)
-	if val.Kind() == reflect.Pointer {
-		val = val.Elem()
+// ReflectValueByField 获取指定结构体指定字段的值
+func ReflectValueByField(s any, fn string) (any, bool) {
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
 	}
-	field := val.FieldByName(fn)
-	if !field.IsValid() {
+	f := v.FieldByName(fn)
+	if !f.IsValid() {
 		return nil, false
 	}
-	return field.Interface(), true
+	return f.Interface(), true
 }
 
-// AttemptReflectFieldValue 依次尝试字段名列表获取指定结构体的字段值
-func AttemptReflectFieldValue(s any, fns []string) (any, bool) {
+// AttemptReflectValueByField 依次尝试字段名列表获取指定结构体的字段值
+func AttemptReflectValueByField(s any, fns []string) (any, bool) {
 	for _, fn := range fns {
-		if val, ok := ReflectFieldValue(s, fn); ok {
-			return val, true
+		if v, ok := ReflectValueByField(s, fn); ok {
+			return v, true
 		}
 	}
 	return nil, false
+}
+
+// ReflectValueList deprecated
+func ReflectValueList(s any) []any {
+	return ReflectValues(s)
+}
+
+// ReflectValueStringList deprecated
+func ReflectValueStringList(s any) []string {
+	return ReflectValuesToString(s)
+}
+
+// ReflectFieldValue deprecated
+func ReflectFieldValue(s any, fn string) (any, bool) {
+	return ReflectValueByField(s, fn)
+}
+
+// AttemptReflectFieldValue deprecated
+func AttemptReflectFieldValue(s any, ns []string) (any, bool) {
+	return AttemptReflectValueByField(s, ns)
 }

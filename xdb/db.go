@@ -16,36 +16,34 @@ var (
 	_orm map[string]*gorm.DB
 )
 
-func Init(configs ...Config) error {
-	_sql = make(map[string]*sql.DB, 4)
-	_orm = make(map[string]*gorm.DB, 4)
+func Init(configs ...Config) (err error) {
+	_sql = make(map[string]*sql.DB)
+	_orm = make(map[string]*gorm.DB)
 
 	for _, config := range configs {
 		cfg := config.Default()
 
-		raw, err := New(cfg)
+		raw, err := NewSqlDb(cfg)
 		if err != nil {
 			Finally()
 			return err
 		}
-		_sql[cfg.Id] = raw
+		AddSqlDb(cfg.Id, raw)
 
-		if !cfg.EnableOrm {
-			continue
+		if cfg.EnableOrm {
+			orm, err := NewOrmDb(cfg, raw)
+			if err != nil {
+				Finally()
+				return err
+			}
+			AddOrmDb(cfg.Id, orm)
 		}
-
-		orm, err := NewOrm(cfg, raw)
-		if err != nil {
-			Finally()
-			return err
-		}
-		_orm[cfg.Id] = orm
 	}
 
 	return nil
 }
 
-func New(config Config) (*sql.DB, error) {
+func NewSqlDb(config Config) (*sql.DB, error) {
 	db, err := sql.Open(config.Type, config.Dsn)
 	if err != nil {
 		return nil, err
@@ -59,10 +57,14 @@ func New(config Config) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewOrm(config Config, db *sql.DB) (*gorm.DB, error) {
+func AddSqlDb(id string, db *sql.DB) {
+	_sql[id] = db
+}
+
+func NewOrmDb(config Config, db *sql.DB) (*gorm.DB, error) {
 	if db == nil {
 		var err error
-		db, err = New(config)
+		db, err = NewSqlDb(config)
 		if err != nil {
 			return nil, err
 		}
@@ -79,6 +81,10 @@ func NewOrm(config Config, db *sql.DB) (*gorm.DB, error) {
 	}
 
 	return gorm.Open(dial, config.OrmConfig())
+}
+
+func AddOrmDb(id string, db *gorm.DB) {
+	_orm[id] = db
 }
 
 func Finally() {

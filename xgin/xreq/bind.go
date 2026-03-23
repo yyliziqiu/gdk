@@ -9,11 +9,8 @@ import (
 )
 
 func bind(ctx *gin.Context, form interface{}, verbose bool) bool {
-	err := ctx.ShouldBind(form)
-	if err != nil {
-		if logger := xgin.GetLogger(); logger != nil {
-			logger.Warnf("Bind failed, path: %s, error: %v.", ctx.FullPath(), err)
-		}
+	if err := ctx.ShouldBind(form); err != nil {
+		xgin.GetLogger().Warnf("Bind failed, path: %s, error: %v.", ctx.FullPath(), err)
 		if verbose {
 			xresp.Error(ctx, xerr.ParametersError.Wrap(err))
 		} else {
@@ -30,4 +27,25 @@ func Bind(ctx *gin.Context, form interface{}) bool {
 
 func BindVerbose(ctx *gin.Context, form interface{}) bool {
 	return bind(ctx, form, true)
+}
+
+func bindQuery(ctx *gin.Context, query interface{}, verbose bool) bool {
+	if err := ctx.BindQuery(query); err != nil {
+		xgin.GetLogger().Warnf("Bind query failed, path: %s, error: %v.", ctx.FullPath(), err)
+		if verbose {
+			xresp.Error(ctx, xerr.ParametersError.Wrap(err))
+		} else {
+			xresp.Error(ctx, xerr.ParametersError)
+		}
+		return false
+	}
+	return true
+}
+
+func BindQuery(ctx *gin.Context, query interface{}) bool {
+	return bindQuery(ctx, query, false)
+}
+
+func BindQueryVerbose(ctx *gin.Context, query interface{}) bool {
+	return bindQuery(ctx, query, true)
 }

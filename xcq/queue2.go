@@ -276,8 +276,7 @@ func (q *Queue) LoadSnap(item any) error {
 	lst := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(item)), 0, 0)
 	lsp := reflect.New(lst.Type())
 
-	err = xsnap.Load(q.path, lsp.Interface())
-	if err != nil {
+	if err = xsnap.Load(q.path, lsp.Interface()); err != nil {
 		return err
 	}
 

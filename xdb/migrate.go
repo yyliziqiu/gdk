@@ -20,8 +20,7 @@ type Migration struct {
 
 func Migrates(ctx context.Context, migrations []Migration) (err error) {
 	for _, migration := range migrations {
-		err = Migrate(ctx, migration)
-		if err != nil {
+		if err = Migrate(ctx, migration); err != nil {
 			return err
 		}
 	}
@@ -30,9 +29,7 @@ func Migrates(ctx context.Context, migrations []Migration) (err error) {
 
 func Migrate(ctx context.Context, migration Migration) (err error) {
 	db := migration.Db.Set("gorm:table_options", "ENGINE=InnoDB")
-
-	err = migrateTables(db, migration.Once)
-	if err != nil {
+	if err = migrateTables(db, migration.Once); err != nil {
 		return fmt.Errorf("migrate once tables failed [%v]", err)
 	}
 
@@ -40,11 +37,9 @@ func Migrate(ctx context.Context, migration Migration) (err error) {
 		return nil
 	}
 
-	err = migrateTables(db, migration.Cron)
-	if err != nil {
+	if err = migrateTables(db, migration.Cron); err != nil {
 		return fmt.Errorf("migrate cron tables failed [%v]", err)
 	}
-
 	go runMigrateCronTables(ctx, db, migration.Cron, migration.Poll)
 
 	return nil
@@ -53,20 +48,14 @@ func Migrate(ctx context.Context, migration Migration) (err error) {
 func migrateTables(db *gorm.DB, tables []schema.Tabler) error {
 	for _, table := range tables {
 		name := table.TableName()
-
-		has := db.Table(name).Migrator().HasTable(&table)
-		if has {
+		if has := db.Table(name).Migrator().HasTable(&table); has {
 			continue
 		}
-
-		err := db.Table(name).Migrator().CreateTable(&table)
-		if err != nil {
+		if err := db.Table(name).Migrator().CreateTable(&table); err != nil {
 			return fmt.Errorf("create table %s failed [%v]", name, err)
 		}
-
 		xlog.Infof("Migration create table: %s", name)
 	}
-
 	return nil
 }
 
@@ -75,8 +64,7 @@ func runMigrateCronTables(ctx context.Context, db *gorm.DB, tables []schema.Tabl
 	for {
 		select {
 		case <-ticker.C:
-			err := migrateTables(db, tables)
-			if err != nil {
+			if err := migrateTables(db, tables); err != nil {
 				xlog.Errorf("Migrate cron tables failed, error: %v.", err)
 			}
 		case <-ctx.Done():

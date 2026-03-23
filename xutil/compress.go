@@ -12,14 +12,12 @@ func GzipEncode(data []byte) ([]byte, error) {
 	wtr := gzip.NewWriter(&buf)
 	defer wtr.Close()
 
-	_, err := wtr.Write(data)
-	if err != nil {
+	if _, err := wtr.Write(data); err != nil {
 		return nil, err
 	}
 
 	// 必须调用 Close()，否则 writer 缓冲区中的内容不会全部返回，导致解压时报 io.ErrUnexpectedEOF
-	err = wtr.Close()
-	if err != nil {
+	if err := wtr.Close(); err != nil {
 		return nil, err
 	}
 
@@ -46,14 +44,12 @@ func ZlibEncode(data []byte) ([]byte, error) {
 	wtr := zlib.NewWriter(&buf)
 	defer wtr.Close()
 
-	_, err := wtr.Write(data)
-	if err != nil {
+	if _, err := wtr.Write(data); err != nil {
 		return nil, err
 	}
 
 	// 必须调用 Close()，否则 writer 缓冲区中的内容不会全部返回，导致解压时报 io.ErrUnexpectedEOF
-	err = wtr.Close()
-	if err != nil {
+	if err := wtr.Close(); err != nil {
 		return nil, err
 	}
 

@@ -25,8 +25,7 @@ type GetPersistConfig interface {
 
 func Persist(ctx context.Context, pts []Persistent) error {
 	// load
-	err := persistLoad(pts)
-	if err != nil {
+	if err := persistLoad(pts); err != nil {
 		return err
 	}
 
@@ -48,14 +47,12 @@ func persistLoad(pts []Persistent) error {
 		}
 		xlog.Infof("Load snap succeed, name: %s, cost: %s.", persistentName(pt), t2.Stops())
 	}
-	xlog.Infof("Load all snaps compeleted, cost: %s.", t1.Stops())
-
+	xlog.Infof("Load all snaps completed, cost: %s.", t1.Stops())
 	return nil
 }
 
 func persistentName(pt Persistent) string {
-	pc := persistentConfig(pt)
-	if pc.Name != "" {
+	if pc := persistentConfig(pt); pc.Name != "" {
 		return pc.Name
 	}
 	typ := reflect.TypeOf(pt)

@@ -13,7 +13,7 @@ type InitFuncs []InitFunc
 
 func (list InitFuncs) Init() error {
 	for _, fun := range list {
-		xlog.Infof("Init moudle: %s", xutil.ReflectFuncName(fun))
+		xlog.Infof("Init module: %s", xutil.ReflectFuncName(fun))
 		err := fun()
 		if err != nil {
 			return err
@@ -28,7 +28,7 @@ type BootFuncs []BootFunc
 
 func (list BootFuncs) Boot(ctx context.Context) error {
 	for _, fun := range list {
-		xlog.Infof("Boot moudle: %s", xutil.ReflectFuncName(fun))
+		xlog.Infof("Boot module: %s", xutil.ReflectFuncName(fun))
 		err := fun(ctx)
 		if err != nil {
 			return err
@@ -37,12 +37,12 @@ func (list BootFuncs) Boot(ctx context.Context) error {
 	return nil
 }
 
-// Check 检查配置是否正确
-type Check interface {
+// ConfigCheck 检查配置是否正确
+type ConfigCheck interface {
 	Check() error
 }
 
-// Default 为配置设置默认值
-type Default interface {
+// ConfigDefault 为配置设置默认值
+type ConfigDefault interface {
 	Default()
 }

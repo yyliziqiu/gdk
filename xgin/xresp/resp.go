@@ -8,7 +8,7 @@ import (
 	"github.com/yyliziqiu/gdk/xerr"
 )
 
-// ============ Response ============
+// ======================== Response ========================
 
 func Response(ctx *gin.Context, statusCode int, data interface{}) {
 	ctx.JSON(statusCode, data)
@@ -38,7 +38,7 @@ func ErrorString(ctx *gin.Context, message string) {
 	ctx.JSON(http.StatusBadRequest, NewErrorResult(xerr.BadRequest.Code, message))
 }
 
-// ============ Abort ============
+// ======================== Abort ========================
 
 func AbortOk(ctx *gin.Context) {
 	ctx.AbortWithStatus(http.StatusOK)
