@@ -19,8 +19,7 @@ var _root *cobra.Command
 
 func ExecuteCommands(app *App, f func(app *App) []*CommandConfig) {
 	initRootCommand(app)
-	configs := f(app)
-	for _, cfg := range configs {
+	for _, cfg := range f(app) {
 		if cfg.Long == "" {
 			cfg.Long = cfg.Desc
 		}
