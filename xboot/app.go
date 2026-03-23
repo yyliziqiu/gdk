@@ -29,10 +29,13 @@ type App struct {
 	// 是否自动初始化基础组件
 	Components bool
 
-	// 模块
-	InitFuncs func() InitFuncs
-	BootFuncs func() BootFuncs
+	// 初始化模块
+	InitFuncs InitFuncs
 
+	// 启动模块
+	BootFuncs BootFuncs
+
+	// 保证只初始化一次
 	hasInitConfig bool
 	hasInitModule bool
 }
@@ -99,7 +102,7 @@ func (t *App) InitModule() error {
 		InitComponents(t.Config)
 	}
 
-	if err := t.InitFuncs().Init(); err != nil {
+	if err := t.InitFuncs.Init(); err != nil {
 		xlog.Errorf("Init modules failed, error: %v", err)
 		return err
 	}
@@ -114,12 +117,11 @@ func (t *App) Run() error {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	if err := t.BootFuncs().Boot(ctx); err != nil {
+	if err := t.BootFuncs.Boot(ctx); err != nil {
 		xlog.Errorf("Boot modules failed, error: %v", err)
 		cancel()
 		return err
 	}
-
 	xlog.Info("App boot successfully.")
 
 	exitCh := make(chan os.Signal, 1)
@@ -132,7 +134,6 @@ func (t *App) Run() error {
 			time.Sleep(wait2)
 		}
 	}
-
 	xlog.Info("App exit.")
 
 	return nil
