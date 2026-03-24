@@ -27,7 +27,7 @@ type App struct {
 	Config any
 
 	// 是否自动初始化基础组件
-	Components bool
+	AutoInject bool
 
 	// 初始化/启动模块
 	InitFuncs InitFuncs
@@ -48,7 +48,6 @@ func (t *App) Init() error {
 }
 
 func (t *App) InitConfig() error {
-	// 只初始化一次
 	if t.hasInitConfig {
 		return nil
 	}
@@ -97,8 +96,8 @@ func (t *App) InitModule() error {
 	}
 	t.hasInitModule = true
 
-	if t.Components {
-		if err := InitComponents(t.Config)(); err != nil {
+	if t.AutoInject {
+		if err := InitBaseComponents(t.Config)(); err != nil {
 			return err
 		}
 	}

@@ -15,16 +15,14 @@ type CommandConfig struct {
 	Func func(cmd *cobra.Command, args []string)
 }
 
-var _root *cobra.Command
-
 func ExecuteCommands(app *App, f func(app *App) []*CommandConfig) {
-	initRootCommand(app)
+	root := createRootCommand(app)
 
 	for _, cfg := range f(app) {
 		if cfg.Long == "" {
 			cfg.Long = cfg.Desc
 		}
-		_root.AddCommand(&cobra.Command{
+		root.AddCommand(&cobra.Command{
 			Use:   cfg.Name,
 			Short: cfg.Desc,
 			Long:  cfg.Long,
@@ -32,29 +30,16 @@ func ExecuteCommands(app *App, f func(app *App) []*CommandConfig) {
 		})
 	}
 
-	if err := _root.Execute(); err != nil {
+	if err := root.Execute(); err != nil {
 		fmt.Printf("Execute command failed, error: %v.", err)
 		os.Exit(1)
 	}
 }
 
-func ExecuteCommand(app *App, commands ...func(app *App) *cobra.Command) {
-	initRootCommand(app)
-
-	for _, cmd := range commands {
-		_root.AddCommand(cmd(app))
-	}
-
-	if err := _root.Execute(); err != nil {
-		fmt.Printf("Execute command failed, error: %v.", err)
-		os.Exit(1)
-	}
-}
-
-func initRootCommand(app *App) {
+func createRootCommand(app *App) *cobra.Command {
 	var config string
 
-	_root = &cobra.Command{
+	root := &cobra.Command{
 		Version: app.Version,
 		Use:     app.Command,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -73,5 +58,20 @@ func initRootCommand(app *App) {
 		},
 	}
 
-	_root.PersistentFlags().StringVarP(&config, "config", "c", "", "config file path")
+	root.PersistentFlags().StringVarP(&config, "config", "c", "", "config file path")
+
+	return root
+}
+
+func ExecuteCommand(app *App, commands ...func(app *App) *cobra.Command) {
+	root := createRootCommand(app)
+
+	for _, cmd := range commands {
+		root.AddCommand(cmd(app))
+	}
+
+	if err := root.Execute(); err != nil {
+		fmt.Printf("Execute command failed, error: %v.", err)
+		os.Exit(1)
+	}
 }

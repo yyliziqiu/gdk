@@ -12,7 +12,7 @@ import (
 	"github.com/yyliziqiu/gdk/xutil"
 )
 
-func InitComponents(config any) InitFunc {
+func InitBaseComponents(config any) InitFunc {
 	return func() error {
 		// database
 		if v, vok := xutil.AttemptReflectValueByField(config, []string{"Db", "DB"}); vok {
@@ -90,7 +90,7 @@ func InitComponents(config any) InitFunc {
 	}
 }
 
-func BootComponents() BootFunc {
+func BootBaseComponents() BootFunc {
 	return func(ctx context.Context) error {
 		go func() {
 			<-ctx.Done()
@@ -105,10 +105,10 @@ func BootComponents() BootFunc {
 
 // InitBase deprecated
 func InitBase(config any) InitFunc {
-	return InitComponents(config)
+	return InitBaseComponents(config)
 }
 
 // BootBase deprecated
 func BootBase() BootFunc {
-	return BootComponents()
+	return BootBaseComponents()
 }
