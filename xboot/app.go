@@ -13,6 +13,18 @@ import (
 	"github.com/yyliziqiu/gdk/xutil"
 )
 
+type InitFunc func() error
+
+type BootFunc func(context.Context) error
+
+type ConfigChecker interface {
+	Check() error
+}
+
+type SetDefaultConfig interface {
+	Default()
+}
+
 type App struct {
 	// app 根命令
 	Command string
@@ -30,12 +42,12 @@ type App struct {
 	AutoInject bool
 
 	// 初始化/启动模块
-	InitFuncs InitFuncs
-	BootFuncs BootFuncs
+	InitFuncs []InitFunc
+	BootFuncs []BootFunc
 
-	// 保证只初始化一次
 	hasInitConfig bool
 	hasInitModule bool
+	hasBootModule bool
 }
 
 // Init app
@@ -43,7 +55,9 @@ func (t *App) Init() error {
 	if err := t.InitConfig(); err != nil {
 		return err
 	}
+
 	xlog.Infof("App version: %s", t.Version)
+
 	return t.InitModule()
 }
 
@@ -60,14 +74,14 @@ func (t *App) InitConfig() error {
 	}
 
 	// 检查配置是否正确
-	if chk, ok := t.Config.(ConfigCheck); ok {
+	if chk, ok := t.Config.(ConfigChecker); ok {
 		if err := chk.Check(); err != nil {
 			return err
 		}
 	}
 
 	// 为配置设置默认值
-	if def, ok := t.Config.(ConfigDefault); ok {
+	if def, ok := t.Config.(SetDefaultConfig); ok {
 		def.Default()
 	}
 
@@ -96,15 +110,20 @@ func (t *App) InitModule() error {
 	}
 	t.hasInitModule = true
 
+	// 自动注入基础组件
 	if t.AutoInject {
 		if err := InitBaseComponents(t.Config)(); err != nil {
 			return err
 		}
 	}
 
-	if err := t.InitFuncs.Init(); err != nil {
-		xlog.Errorf("Init modules failed, error: %v", err)
-		return err
+	// 初始化模块
+	for _, fun := range t.InitFuncs {
+		xlog.Infof("Init module: %s", xutil.ReflectFuncName(fun))
+		if err := fun(); err != nil {
+			xlog.Errorf("Init modules failed, error: %v", err)
+			return err
+		}
 	}
 
 	return nil
@@ -112,23 +131,26 @@ func (t *App) InitModule() error {
 
 // Run app
 func (t *App) Run() error {
+	// 初始化配置和模块
 	if err := t.Init(); err != nil {
 		return err
 	}
 
+	// 启动模块
 	ctx, cancel := context.WithCancel(context.Background())
-	if err := t.BootFuncs.Boot(ctx); err != nil {
-		xlog.Errorf("Boot modules failed, error: %v", err)
+	if err := t.BootModule(ctx); err != nil {
 		cancel()
 		return err
 	}
 	xlog.Info("App boot successfully.")
 
+	// 等待程序退出
 	exitCh := make(chan os.Signal, 1)
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-exitCh
 	cancel()
 
+	//  延时退出
 	if wait1, ok1 := t.parseConfig("ExitWait"); ok1 {
 		if wait2, ok2 := wait1.(time.Duration); ok2 && wait2 > 0 {
 			time.Sleep(wait2)
@@ -137,4 +159,37 @@ func (t *App) Run() error {
 	xlog.Info("App exit.")
 
 	return nil
+}
+
+func (t *App) BootModule(ctx context.Context) error {
+	if t.hasBootModule {
+		return nil
+	}
+	t.hasBootModule = true
+
+	for _, fun := range t.BootFuncs {
+		xlog.Infof("Boot module: %s", xutil.ReflectFuncName(fun))
+		if err := fun(ctx); err != nil {
+			xlog.Errorf("Boot modules failed, error: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (t *App) RunWithoutBlock() (func(), error) {
+	// 初始化配置和模块
+	if err := t.Init(); err != nil {
+		return nil, err
+	}
+
+	// 启动模块
+	ctx, cancel := context.WithCancel(context.Background())
+	err := t.BootModule(ctx)
+	if err == nil {
+		xlog.Info("App boot successfully.")
+	}
+
+	return cancel, err
 }
