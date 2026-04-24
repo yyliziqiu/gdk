@@ -16,30 +16,26 @@ var (
 	_orm map[string]*gorm.DB
 )
 
-func Init(configs ...Config) (err error) {
+func Init(configs ...Config) error {
 	_sql = make(map[string]*sql.DB)
 	_orm = make(map[string]*gorm.DB)
-
 	for _, config := range configs {
 		cfg := config.Default()
-
 		raw, err := NewSqlDb(cfg)
 		if err != nil {
 			Finally()
 			return err
 		}
 		AddSqlDb(cfg.Id, raw)
-
 		if cfg.EnableOrm {
-			orm, err := NewOrmDb(cfg, raw)
-			if err != nil {
+			orm, serr := NewOrmDb(cfg, raw)
+			if serr != nil {
 				Finally()
-				return err
+				return serr
 			}
 			AddOrmDb(cfg.Id, orm)
 		}
 	}
-
 	return nil
 }
 
@@ -55,10 +51,6 @@ func NewSqlDb(config Config) (*sql.DB, error) {
 	db.SetConnMaxIdleTime(config.ConnMaxLifetime)
 
 	return db, nil
-}
-
-func AddSqlDb(id string, db *sql.DB) {
-	_sql[id] = db
 }
 
 func NewOrmDb(config Config, db *sql.DB) (*gorm.DB, error) {
@@ -83,6 +75,10 @@ func NewOrmDb(config Config, db *sql.DB) (*gorm.DB, error) {
 	return gorm.Open(dial, config.OrmConfig())
 }
 
+func AddSqlDb(id string, db *sql.DB) {
+	_sql[id] = db
+}
+
 func AddOrmDb(id string, db *gorm.DB) {
 	_orm[id] = db
 }
@@ -91,6 +87,14 @@ func Finally() {
 	for _, db := range _sql {
 		_ = db.Close()
 	}
+}
+
+func New(config Config) (*sql.DB, error) {
+	return NewSqlDb(config)
+}
+
+func Add(id string, db *sql.DB) {
+	AddSqlDb(id, db)
 }
 
 func Get(id string) *sql.DB {

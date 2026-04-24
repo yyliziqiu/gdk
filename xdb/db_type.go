@@ -69,11 +69,12 @@ func (c Config) Default() Config {
 }
 
 func (c Config) OrmConfig() *gorm.Config {
-	lc := ormlog.Config{
-		LogLevel:                  ormlog.LogLevel(c.OrmLogLevel),
-		SlowThreshold:             c.OrmLogSlowThreshold,
-		ParameterizedQueries:      c.OrmLogParameterizedQueries,
-		IgnoreRecordNotFoundError: c.OrmLogIgnoreRecordNotFoundError,
+	return &gorm.Config{
+		Logger: ormlog.New(c.OrmLogger, ormlog.Config{
+			LogLevel:                  ormlog.LogLevel(c.OrmLogLevel),
+			SlowThreshold:             c.OrmLogSlowThreshold,
+			ParameterizedQueries:      c.OrmLogParameterizedQueries,
+			IgnoreRecordNotFoundError: c.OrmLogIgnoreRecordNotFoundError,
+		}),
 	}
-	return &gorm.Config{Logger: ormlog.New(c.OrmLogger, lc)}
 }

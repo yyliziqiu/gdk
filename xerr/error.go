@@ -6,7 +6,10 @@ import (
 )
 
 type Error struct {
-	status  int
+	// HTTP 状态码
+	status int
+
+	// 错误码 & 错误信息
 	Code    string
 	Message string
 }
