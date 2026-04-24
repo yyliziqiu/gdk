@@ -10,7 +10,7 @@ import (
 type OnceTask struct {
 	Name string                    // 名称
 	Cons int                       // 并发数
-	Func func(ctx context.Context) // 方法
+	Func func(ctx context.Context) `json:"-" yaml:"-"` // 方法
 }
 
 func (t OnceTask) slug() string {

@@ -13,7 +13,7 @@ import (
 type CronTask struct {
 	Name string
 	Spec string
-	Func func()
+	Func func() `json:"-" yaml:"-"`
 }
 
 func (t CronTask) slug() string {

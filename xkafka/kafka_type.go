@@ -53,8 +53,8 @@ type ProducerConfig struct {
 	Id                    string                     // optional
 	Topics                []string                   // optional
 	RequestRequiredAcks   int                        // optional
-	DeliveredCallback     func(kafka.TopicPartition) `json:"-"` // optional
-	DeliverFailedCallback func(kafka.TopicPartition) `json:"-"` // optional
+	DeliveredCallback     func(kafka.TopicPartition) `json:"-" yaml:"-"` // optional
+	DeliverFailedCallback func(kafka.TopicPartition) `json:"-" yaml:"-"` // optional
 }
 
 func (c ProducerConfig) Default() ProducerConfig {

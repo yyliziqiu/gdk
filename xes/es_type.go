@@ -10,21 +10,21 @@ import (
 const DefaultId = "default"
 
 type Config struct {
-	Id           string   // optional
-	Hosts        []string // must
-	Username     string   // must
-	Password     string   // must
-	EnableLogger bool     // optional
+	Id        string   // optional
+	Hosts     []string // must
+	Username  string   // must
+	Password  string   // must
+	EnableLog bool     // optional
 
-	Logger *logrus.Logger `json:"-"` // optional
-	Client elastic.Doer   `json:"-"` // optional
+	Logger *logrus.Logger `json:"-" yaml:"-"` // optional
+	Client elastic.Doer   `json:"-" yaml:"-"` // optional
 }
 
 func (c Config) Default() Config {
 	if c.Id == "" {
 		c.Id = DefaultId
 	}
-	if c.EnableLogger && c.Logger == nil {
+	if c.EnableLog && c.Logger == nil {
 		c.Logger = xlog.Default
 	}
 	return c
