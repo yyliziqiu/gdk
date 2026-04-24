@@ -65,7 +65,7 @@ func titles(s any) []string {
 	mt := reflect.TypeOf(s)
 	var fields []string
 	for i := 0; i < mt.NumField(); i++ {
-		title := mt.Field(i).Tag.Get("csv")
+		title := mt.Field(i).Tag.Get("title")
 		if title == "" {
 			title = mt.Field(i).Name
 		}
