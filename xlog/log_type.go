@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	TextFormat = "text"
-	JsonFormat = "json"
+	TextFormat  = "text"
+	JsonFormat  = "json"
+	Text2Format = "text2"
+	Json2Format = "json2"
 )
 
 type LevelDispatch map[string][]logrus.Level
@@ -73,4 +75,30 @@ func (c Config) Default() Config {
 	}
 
 	return c
+}
+
+// Text2Formatter 修复日志中的时区问题
+type Text2Formatter struct {
+	logrus.TextFormatter
+	Location *time.Location
+}
+
+func (f *Text2Formatter) Format(entry *logrus.Entry) ([]byte, error) {
+	if f.Location != nil {
+		entry.Time = entry.Time.In(f.Location)
+	}
+	return f.TextFormatter.Format(entry)
+}
+
+// Json2Formatter 修复日志中的时区问题
+type Json2Formatter struct {
+	logrus.JSONFormatter
+	Location *time.Location
+}
+
+func (f *Json2Formatter) Format(entry *logrus.Entry) ([]byte, error) {
+	if f.Location != nil {
+		entry.Time = entry.Time.In(f.Location)
+	}
+	return f.JSONFormatter.Format(entry)
 }

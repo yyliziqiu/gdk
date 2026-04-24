@@ -96,6 +96,21 @@ func newFormatter(conf Config) logrus.Formatter {
 		return &logrus.JSONFormatter{
 			TimestampFormat: dateFormat,
 		}
+	case Json2Format:
+		return &Json2Formatter{
+			JSONFormatter: logrus.JSONFormatter{
+				TimestampFormat: dateFormat,
+			},
+			Location: conf.Location,
+		}
+	case Text2Format:
+		return &Text2Formatter{
+			TextFormatter: logrus.TextFormatter{
+				DisableQuote:    true,
+				TimestampFormat: dateFormat,
+			},
+			Location: conf.Location,
+		}
 	default:
 		return &logrus.TextFormatter{
 			DisableQuote:    true,
