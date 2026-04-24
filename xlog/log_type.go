@@ -19,6 +19,7 @@ type Config struct {
 	Path         string
 	Name         string
 	Timezone     string
+	Location     *time.Location `json:"-" yaml:"-"`
 	Level        string
 	ShowCaller   bool
 	DataFormat   string
@@ -32,40 +33,44 @@ func (c Config) Default() Config {
 	if c.Path == "" {
 		c.Console = true
 	}
+
 	if c.Name == "" {
 		c.Name = "app"
 	}
+
+	if c.Timezone == "" {
+		c.Timezone = "Asia/Shanghai"
+	}
+	if loc, err := time.LoadLocation(c.Timezone); err == nil {
+		c.Location = loc
+	} else {
+		c.Location = time.Local
+		fmt.Printf("Parse timezone failed when init log, error: %v.\n", err)
+	}
+
 	if c.Level == "" {
 		c.Level = "debug"
 	}
+
 	if c.DataFormat == "" {
 		c.DataFormat = TextFormat
 	}
+
 	if c.DateFormat == "" {
 		c.DateFormat = time.DateTime
 	}
+
 	if c.RotateMaxAge == 0 {
 		c.RotateMaxAge = 7 * 24 * time.Hour
 	}
+
 	if c.RotateTime == 0 {
 		c.RotateTime = 24 * time.Hour
 	}
+
 	if c.RotateLevel == 0 {
 		c.RotateLevel = 2
 	}
+
 	return c
-}
-
-func (c Config) Location() *time.Location {
-	if c.Timezone == "" {
-		return time.Local
-	}
-
-	loc, err := time.LoadLocation(c.Timezone)
-	if err != nil {
-		fmt.Printf("Parse timezone failed when init log, error: %v.\n", err)
-		return time.Local
-	}
-
-	return loc
 }

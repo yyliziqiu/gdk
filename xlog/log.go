@@ -131,7 +131,7 @@ func newHook(conf Config) (*lfshook.LfsHook, error) {
 	var (
 		dir = conf.Path
 		pfx = conf.Name
-		loc = conf.Location()
+		loc = conf.Location
 		rta = conf.RotateMaxAge
 		rtt = conf.RotateTime
 		rtl = conf.RotateLevel
@@ -156,11 +156,7 @@ func newHook(conf Config) (*lfshook.LfsHook, error) {
 }
 
 func newRotateLogs(dir string, pfx string, loc *time.Location, rta time.Duration, rtt time.Duration) (*rl.RotateLogs, error) {
-	rls, err := rl.New(
-		filepath.Join(dir, pfx+"-%Y%m%d.log"),
-		rl.WithLocation(loc),
-		rl.WithMaxAge(rta),
-		rl.WithRotationTime(rtt))
+	rls, err := rl.New(filepath.Join(dir, pfx+"-%Y%m%d.log"), rl.WithLocation(loc), rl.WithMaxAge(rta), rl.WithRotationTime(rtt))
 	if err != nil {
 		return nil, fmt.Errorf("new rotation failed [%v]", err)
 	}
