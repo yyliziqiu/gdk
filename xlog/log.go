@@ -92,10 +92,6 @@ func newFormatter(conf Config) logrus.Formatter {
 	}
 
 	switch dataFormat {
-	case JsonFormat:
-		return &logrus.JSONFormatter{
-			TimestampFormat: dateFormat,
-		}
 	case Json2Format:
 		return &Json2Formatter{
 			JSONFormatter: logrus.JSONFormatter{
@@ -110,6 +106,10 @@ func newFormatter(conf Config) logrus.Formatter {
 				TimestampFormat: dateFormat,
 			},
 			Location: conf.Location,
+		}
+	case JsonFormat:
+		return &logrus.JSONFormatter{
+			TimestampFormat: dateFormat,
 		}
 	default:
 		return &logrus.TextFormatter{
