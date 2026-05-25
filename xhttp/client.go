@@ -31,7 +31,6 @@ type Client struct {
 	logHeader     bool                           // 日志中是否保存请求头
 	logEscape     bool                           // 是否转换日志中的特殊字符
 	logChange     *strings.Replacer              // 字符替换器
-	hasBinary     bool                           // 请求接口的响应中是否存在二进制流，建议响应中存在二进制流时将此参数设置为 true，避免每次接收到响应都要去判断 Content-Type
 	requestBefore func(req *http.Request)        // 在发送请求前调用
 	responseAfter func(res *http.Response) error // 在接收响应后调用
 }
@@ -46,7 +45,6 @@ func New(options ...Option) *Client {
 		logHeader: false,
 		logEscape: false,
 		logChange: _replacer,
-		hasBinary: false,
 	}
 
 	for _, option := range options {
@@ -110,10 +108,10 @@ func (c *Client) doRequest(req *http.Request, out any, reqbody []byte) (*http.Re
 	resbody, err := c.handleResponse(res, out)
 	res.Body.Close()
 
-	if !c.hasBinary || IsTextType(res.Header.Get("Content-Type")) {
-		c.logRequest(req, reqbody, res.StatusCode, resbody, err, timer.Stops())
-	} else {
+	if out == nil {
 		c.logRequest(req, reqbody, res.StatusCode, nil, err, timer.Stops())
+	} else {
+		c.logRequest(req, reqbody, res.StatusCode, resbody, err, timer.Stops())
 	}
 
 	return res, resbody, err

@@ -10,7 +10,7 @@ import (
 
 // 记录请求日志
 const (
-	logFormat1 = "Request succeed(%d), method: %s, url: %s, header: %s, request: %s, response: %s, cost: %s."
+	logFormat1 = "Request done(%d), method: %s, url: %s, header: %s, request: %s, response: %s, cost: %s."
 	logFormat2 = "Request fail(%d), method: %s, url: %s, header: %s, request: %s, response: %s, error: %v, cost: %s."
 )
 

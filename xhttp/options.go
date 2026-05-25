@@ -112,12 +112,6 @@ func LogChange(replacer *strings.Replacer) Option {
 	}
 }
 
-func HasBinaryResponse(has bool) Option {
-	return func(cli *Client) {
-		cli.hasBinary = has
-	}
-}
-
 func RequestBefore(f func(r *http.Request)) Option {
 	return func(cli *Client) {
 		cli.requestBefore = f
