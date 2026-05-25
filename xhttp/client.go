@@ -11,7 +11,6 @@ import (
 	"net/textproto"
 	"net/url"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -26,12 +25,13 @@ type Client struct {
 	logger        *logrus.Logger                 // 如果为 nil，则不记录日志
 	format        string                         // 响应报文格式
 	prefix        string                         // URL 前缀
-	error         error                          // 响应失败时的 JSON 结构。在响应成功和失败时 JSON 结构不一致时设置，不能是指针
-	dumps         bool                           // 将 HTTP 报文打印到控制台
-	logLength     int                            // 最大日志长度
+	errtyp        reflect.Type                   // 响应失败时的 JSON 结构，必须实现 error 接口且不能设置为指针。在成功和失败响应的 JSON 结构不一致时设置
+	dumps         bool                           // 将 HTTP 报文打印到控制台，调试用
+	logLength     int                            // 最大日志长度，此处是字符数而非字节数
 	logHeader     bool                           // 日志中是否保存请求头
 	logEscape     bool                           // 是否转换日志中的特殊字符
 	logChange     *strings.Replacer              // 字符替换器
+	hasBinary     bool                           // 请求接口的响应中是否存在二进制流，建议响应中存在二进制流时将此参数设置为 true，避免每次接收到响应都要去判断 Content-Type
 	requestBefore func(req *http.Request)        // 在发送请求前调用
 	responseAfter func(res *http.Response) error // 在接收响应后调用
 }
@@ -46,6 +46,7 @@ func New(options ...Option) *Client {
 		logHeader: false,
 		logEscape: false,
 		logChange: _replacer,
+		hasBinary: false,
 	}
 
 	for _, option := range options {
@@ -61,7 +62,7 @@ func (c *Client) get(method string, path string, query url.Values, header http.H
 		return err
 	}
 
-	if _, _, err = c.doRequest(req, nil, out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, nil); err != nil {
 		return err
 	}
 
@@ -95,10 +96,10 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 	return req, nil
 }
 
-func (c *Client) doRequest(req *http.Request, reqbody []byte, out any, logResbody bool) (*http.Response, []byte, error) {
+func (c *Client) doRequest(req *http.Request, out any, reqbody []byte) (*http.Response, []byte, error) {
 	c.dumpRequest(req)
 
-	tim := xtime.NewTimer()
+	timer := xtime.NewTimer()
 
 	res, err := c.client.Do(req)
 	if err != nil {
@@ -109,10 +110,10 @@ func (c *Client) doRequest(req *http.Request, reqbody []byte, out any, logResbod
 	resbody, err := c.handleResponse(res, out)
 	res.Body.Close()
 
-	if logResbody {
-		c.logRequest(req, reqbody, res.StatusCode, resbody, err, tim.Stops())
+	if !c.hasBinary || IsTextType(res.Header.Get("Content-Type")) {
+		c.logRequest(req, reqbody, res.StatusCode, resbody, err, timer.Stops())
 	} else {
-		c.logRequest(req, reqbody, res.StatusCode, nil, err, tim.Stops())
+		c.logRequest(req, reqbody, res.StatusCode, nil, err, timer.Stops())
 	}
 
 	return res, resbody, err
@@ -185,8 +186,8 @@ func (c *Client) handleJsonResponse(status int, body []byte, out any) error {
 		return errors.New("this is a redirect response")
 	}
 
-	if c.error != nil {
-		ret := reflect.New(reflect.TypeOf(c.error)).Interface()
+	if c.errtyp != nil {
+		ret := reflect.New(c.errtyp).Interface()
 		if err := json.Unmarshal(body, ret); err == nil {
 			return ret.(error)
 		}
@@ -217,14 +218,14 @@ func (c *Client) post(method string, path string, query url.Values, header http.
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, reqbody); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Get http get
+// Get restful get
 //
 // 若响应失败时 http 状态码为200：
 //  1. 则 out 需要实现 JsonResponse 接口来判断响应是否成功
@@ -238,34 +239,34 @@ func (c *Client) Get(path string, query url.Values, header http.Header, out any)
 	return c.get(http.MethodGet, path, query, header, out)
 }
 
-// Post http post
-func (c *Client) Post(path string, query url.Values, header http.Header, in any, out any) error {
-	return c.post(http.MethodPost, path, query, header, in, out)
+// Post restful post
+func (c *Client) Post(path string, header http.Header, in any, out any) error {
+	return c.post(http.MethodPost, path, nil, header, in, out)
 }
 
-// Put http put
-func (c *Client) Put(path string, query url.Values, header http.Header, in any, out any) error {
-	return c.post(http.MethodPut, path, query, header, in, out)
+// Put restful put
+func (c *Client) Put(path string, header http.Header, in any, out any) error {
+	return c.post(http.MethodPut, path, nil, header, in, out)
 }
 
-// Patch http patch
-func (c *Client) Patch(path string, query url.Values, header http.Header, in any, out any) error {
-	return c.post(http.MethodPatch, path, query, header, in, out)
+// Patch restful patch
+func (c *Client) Patch(path string, header http.Header, in any, out any) error {
+	return c.post(http.MethodPatch, path, nil, header, in, out)
 }
 
-// Delete http delete
+// Delete restful delete
 func (c *Client) Delete(path string, query url.Values, header http.Header, out any) error {
 	return c.get(http.MethodDelete, path, query, header, out)
 }
 
-// GetBinary 获取流数据
+// GetBinary 获取二进制流数据。用来下载图片、视频等
 func (c *Client) GetBinary(path string, query url.Values, header http.Header) ([]byte, string, error) {
 	req, err := c.newRequest(http.MethodGet, path, query, header, nil)
 	if err != nil {
 		return nil, "", err
 	}
 
-	res, resbody, err := c.doRequest(req, nil, nil, false)
+	res, resbody, err := c.doRequest(req, nil, nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -275,7 +276,22 @@ func (c *Client) GetBinary(path string, query url.Values, header http.Header) ([
 	return resbody, restype, nil
 }
 
-// PostForm application/x-www-form-urlencoded 表单请求
+// PostJson 发送 JSON 请求
+func (c *Client) PostJson(path string, header http.Header, in []byte, out any) error {
+	req, err := c.newRequest(http.MethodPost, path, nil, header, bytes.NewReader(in))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	if _, _, err = c.doRequest(req, out, in); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PostForm 发送 application/x-www-form-urlencoded 表单请求
 func (c *Client) PostForm(path string, header http.Header, in url.Values, out any) error {
 	reqbody := in.Encode()
 
@@ -287,14 +303,14 @@ func (c *Client) PostForm(path string, header http.Header, in url.Values, out an
 
 	reqbody2, _ := url.QueryUnescape(reqbody)
 
-	if _, _, err = c.doRequest(req, []byte(reqbody2), out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, []byte(reqbody2)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// PostData multipart/form-data 表单请求
+// PostData 发送 multipart/form-data 表单请求
 func (c *Client) PostData(path string, header http.Header, values map[string]string, files map[string]string, out any) error {
 	var (
 		buf    bytes.Buffer
@@ -339,7 +355,7 @@ func (c *Client) PostData(path string, header http.Header, values map[string]str
 		reqbody, _ = json.Marshal(cpy)
 	}
 
-	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, reqbody); err != nil {
 		return err
 	}
 
@@ -365,7 +381,13 @@ func (c *Client) writeFormFile(writer *multipart.Writer, key string, path string
 	return nil
 }
 
-// PostBinary 上传流数据
+// PostFile 发送单个文件
+func (c *Client) PostFile(path string, header http.Header, values map[string]string, field string, filepath string, out any) error {
+	files := map[string]string{field: filepath}
+	return c.PostData(path, header, values, files, out)
+}
+
+// PostBinary 发送二进制流数据
 func (c *Client) PostBinary(path string, header http.Header, mimeType string, in io.Reader, out any) error {
 	req, err := c.newRequest(http.MethodPost, path, nil, header, in)
 	if err != nil {
@@ -373,29 +395,14 @@ func (c *Client) PostBinary(path string, header http.Header, mimeType string, in
 	}
 	req.Header.Set("Content-Type", mimeType)
 
-	if _, _, err = c.doRequest(req, nil, out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, nil); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// PostJson 上传 JSON 字节数组
-func (c *Client) PostJson(path string, header http.Header, in []byte, out any) error {
-	req, err := c.newRequest(http.MethodPost, path, nil, header, bytes.NewReader(in))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	if _, _, err = c.doRequest(req, in, out, true); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// PostStream 以 multipart/form-data 形式上传流数据
+// PostStream 以 multipart/form-data 形式发送二进制流数据。相较于 PostData 发送本地文件，此方法发送的是 io.Reader 中的数据流
 func (c *Client) PostStream(path string, header http.Header, values map[string]string, field string, filename string, mimeType string, stream io.Reader, out any) error {
 	var (
 		buf    bytes.Buffer
@@ -442,33 +449,9 @@ func (c *Client) PostStream(path string, header http.Header, values map[string]s
 		reqbody, _ = json.Marshal(values)
 	}
 
-	if _, _, err = c.doRequest(req, reqbody, out, true); err != nil {
+	if _, _, err = c.doRequest(req, out, reqbody); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// PostFile 上传文件
-func (c *Client) PostFile(path string, header http.Header, values map[string]string, field string, filepath string, out any) error {
-	files := map[string]string{field: filepath}
-	return c.PostData(path, header, values, files, out)
-}
-
-// ForwardBinary 转发二进制数据
-func (c *Client) ForwardBinary(path string, header http.Header, src string, out any) error {
-	data, typ, err := c.GetBinary(src, nil, nil)
-	if err != nil {
-		return err
-	}
-	return c.PostBinary(path, header, typ, bytes.NewReader(data), out)
-}
-
-// ForwardStream 以 multipart/form-data 形式转发流数据
-func (c *Client) ForwardStream(path string, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
-	data, _, err := c.GetBinary(src, nil, nil)
-	if err != nil {
-		return err
-	}
-	return c.PostStream(path, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
 }

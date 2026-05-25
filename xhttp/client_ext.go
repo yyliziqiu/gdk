@@ -5,15 +5,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 )
 
+// ForwardBinary 转发二进制数据
+func (c *Client) ForwardBinary(path string, header http.Header, src string, out any) error {
+	data, typ, err := c.GetBinary(src, nil, nil)
+	if err != nil {
+		return err
+	}
+	return c.PostBinary(path, header, typ, bytes.NewReader(data), out)
+}
+
+// ForwardStream 以 multipart/form-data 形式转发流数据
+func (c *Client) ForwardStream(path string, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
+	data, _, err := c.GetBinary(src, nil, nil)
+	if err != nil {
+		return err
+	}
+	return c.PostStream(path, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
+}
+
+// ================================  ================================
 func (c *Client) get2(method string, path string, header http.Header, out any) ([]byte, error) {
 	req, err := c.newRequest(method, path, nil, header, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	_, resbody, err := c.doRequest(req, nil, out, true)
+	_, resbody, err := c.doRequest(req, out, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +57,7 @@ func (c *Client) post2(method string, path string, header http.Header, in any, o
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	_, resbody, err := c.doRequest(req, reqbody, out, true)
+	_, resbody, err := c.doRequest(req, out, reqbody)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +92,7 @@ func (c *Client) post3(method string, path string, header http.Header, in []byte
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	_, resbody, err := c.doRequest(req, in, out, true)
+	_, resbody, err := c.doRequest(req, out, in)
 	if err != nil {
 		return nil, err
 	}

@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
+// DefaultClient 创建默认客户端
 func DefaultClient() *http.Client {
 	return &http.Client{
 		Timeout: 5 * time.Second,
 	}
 }
 
+// JoinUrl 拼接两段 URL
 func JoinUrl(prefix string, suffix string) string {
 	if suffix == "" {
 		return prefix
@@ -36,6 +38,7 @@ func JoinUrl(prefix string, suffix string) string {
 	return prefix + "/" + suffix
 }
 
+// JoinUrls 拼接多段 URL
 func JoinUrls(segments ...string) string {
 	if len(segments) == 0 {
 		return ""
@@ -61,6 +64,7 @@ func JoinUrls(segments ...string) string {
 	return rurl
 }
 
+// AppendQuery 向 URL 追加查询条件
 func AppendQuery(rurl string, query url.Values) string {
 	parsed, err := url.Parse(rurl)
 	if err != nil {
@@ -81,6 +85,7 @@ func AppendQuery(rurl string, query url.Values) string {
 	return parsed.String()
 }
 
+// SerialHeader 序列化请求头
 func SerialHeader(header http.Header) string {
 	if len(header) == 0 {
 		return "{}"
@@ -96,8 +101,34 @@ func SerialHeader(header http.Header) string {
 	return string(bs)
 }
 
+// EscapeQuotes 转义请求中的特殊字符
 var _quoteReplacer = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
 
 func EscapeQuotes(s string) string {
 	return _quoteReplacer.Replace(s)
+}
+
+// IsTextType 根据 contentType 判断是否为文本类型
+var _canLogTypes = []string{
+	"application/json",
+	"application/xml",
+}
+
+func IsTextType(contentType string) bool {
+	if contentType == "" {
+		return false
+	}
+
+	ct := strings.ToLower(contentType)
+	if strings.HasPrefix(ct, "text/") {
+		return true
+	}
+
+	for _, t := range _canLogTypes {
+		if strings.HasPrefix(ct, t) {
+			return true
+		}
+	}
+
+	return false
 }

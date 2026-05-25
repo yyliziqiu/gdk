@@ -5,26 +5,25 @@ import (
 	"strings"
 )
 
+// 响应格式
 const (
 	FormatJson = "json"
 	FormatText = "text"
 )
 
-const (
-	logFormat1 = "Request succeed(%d), method: %s, url: %s, header: %s, request: %s, response: %s, cost: %s."
-	logFormat2 = "Request failed(%d), method: %s, url: %s, header: %s, request: %s, response: %s, error: %v, cost: %s."
-)
-
+// 字符替换映射
 var _replacer = strings.NewReplacer(
 	"\t", "\\t",
 	"\r", "\\r",
 	"\n", "\\n",
 )
 
+// JsonResponse 判断响应是否失败
 type JsonResponse interface {
 	Failed() bool
 }
 
+// ResponseError 默认响应错误
 type ResponseError struct {
 	status int
 	errstr string

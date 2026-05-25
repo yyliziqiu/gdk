@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
 	"strings"
 	"time"
 
@@ -75,9 +76,9 @@ func BaseUrl(baseUrl string) Option {
 	}
 }
 
-func Error(error error) Option {
+func Error(err error) Option {
 	return func(cli *Client) {
-		cli.error = error
+		cli.errtyp = reflect.TypeOf(err)
 	}
 }
 
@@ -108,6 +109,12 @@ func LogEscape(enabled bool) Option {
 func LogChange(replacer *strings.Replacer) Option {
 	return func(cli *Client) {
 		cli.logChange = replacer
+	}
+}
+
+func HasBinaryResponse(has bool) Option {
+	return func(cli *Client) {
+		cli.hasBinary = has
 	}
 }
 
