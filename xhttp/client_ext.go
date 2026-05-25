@@ -26,7 +26,7 @@ func (c *Client) ForwardStream(path string, header http.Header, values map[strin
 	return c.PostStream(path, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
 }
 
-// ================================  ================================
+// ======================== 以下方法会返回响应中的消息体 ========================
 func (c *Client) get2(method string, path string, header http.Header, out any) ([]byte, error) {
 	req, err := c.newRequest(method, path, nil, header, nil)
 	if err != nil {
@@ -84,6 +84,8 @@ func (c *Client) Patch2(path string, header http.Header, in any, out any) ([]byt
 func (c *Client) Delete2(path string, header http.Header, out any) ([]byte, error) {
 	return c.get2(http.MethodDelete, path, header, out)
 }
+
+// ======================== 以下方法直接发送 JSON 字符串的字节数组并返回响应中的消息体 ========================
 
 func (c *Client) post3(method string, path string, header http.Header, in []byte, out any) ([]byte, error) {
 	req, err := c.newRequest(method, path, nil, header, bytes.NewReader(in))
