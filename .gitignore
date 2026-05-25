@@ -1,6 +1,8 @@
+.DS_Store
+
+.idea
+.claude
+
 /bin
 /logs
 /data
-
-.idea
-.DS_Store
