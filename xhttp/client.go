@@ -43,7 +43,7 @@ func New(options ...Option) *Client {
 		logger:    nil,
 		format:    FormatJson,
 		prefix:    "",
-		logLength: [2]int{1024, 1024},
+		logLength: [2]int{2048, 2048},
 		logAlways: true,
 		logHeader: LogHeaderNone,
 		logForbid: []string{},

@@ -16,6 +16,10 @@ func Truncate(s string, n int) string {
 
 // TruncateUtf8 截断 UTF8 编码的字符串
 func TruncateUtf8(str string, n int) string {
+	if n <= 0 {
+		return ""
+	}
+
 	if len(str) <= n {
 		return str
 	}
