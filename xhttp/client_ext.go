@@ -42,13 +42,16 @@ func (c *Client) get2(method string, path string, header http.Header, out any) (
 }
 
 func (c *Client) post2(method string, path string, header http.Header, in any, out any) ([]byte, error) {
-	if in == nil {
-		in = struct{}{}
-	}
+	var (
+		err     error
+		reqbody []byte
+	)
 
-	reqbody, err := json.Marshal(in)
-	if err != nil {
-		return nil, fmt.Errorf("marshal request body error [%v]", err)
+	if in != nil {
+		reqbody, err = json.Marshal(in)
+		if err != nil {
+			return nil, fmt.Errorf("marshal request body error [%v]", err)
+		}
 	}
 
 	req, err := c.newRequest(method, path, nil, header, bytes.NewReader(reqbody))
