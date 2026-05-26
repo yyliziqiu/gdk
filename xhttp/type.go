@@ -165,8 +165,9 @@ func SerialHeader(header http.Header, forbid []string) string {
 	}
 
 	length := 0
+	passed := len(forbid) == 0
 	for k, vs := range header {
-		if !inArrayString(forbid, k) {
+		if passed || !inArrayString(forbid, k) {
 			if len(vs) == 1 {
 				length += len(k) + len(vs[0]) + 3
 			} else if len(vs) == 0 {
@@ -182,7 +183,7 @@ func SerialHeader(header http.Header, forbid []string) string {
 	sb := strings.Builder{}
 	sb.Grow(length + 32)
 	for k, vs := range header {
-		if !inArrayString(forbid, k) {
+		if passed || !inArrayString(forbid, k) {
 			if len(vs) == 1 {
 				sb.WriteString(k)
 				sb.WriteByte('=')
@@ -207,9 +208,6 @@ func SerialHeader(header http.Header, forbid []string) string {
 }
 
 func inArrayString(arr []string, str string) bool {
-	if len(arr) == 0 {
-		return false
-	}
 	for _, v := range arr {
 		if v == str {
 			return true
