@@ -37,27 +37,23 @@ const (
 	logFormat32 = "Request fail(%d), method: %s, url: %s, reqhead: %s, reqbody: %s, reshead: %s, resbody: %s, error: %v, cost: %s."
 )
 
-// 字符替换映射
-var _replacer = strings.NewReplacer(
-	"\t", "\\t",
-	"\r", "\\r",
-	"\n", "\\n",
+var (
+	// 字符替换映射
+	_replacer = strings.NewReplacer(
+		"\t", "\\t",
+		"\r", "\\r",
+		"\n", "\\n",
+	)
+
+	// HTTP 头部序列化分隔符
+	_divide = []byte{';', ' '}
+
+	// 转义字符
+	_escape = strings.NewReplacer(`"`, "\\\"", "\\", "\\\\")
+
+	// 文本类型的 Content-Type
+	_textTypes = []string{"application/json", "application/xml"}
 )
-
-// 转义字符
-var _quoteReplacer = strings.NewReplacer(
-	"\\", "\\\\",
-	`"`, "\\\"",
-)
-
-// Content-Type 文本类型
-var _textTypes = []string{
-	"application/json",
-	"application/xml",
-}
-
-// HTTP 头分隔符
-var _headerDivide = []byte{';', ' '}
 
 // JsonResponse 判断响应是否失败
 type JsonResponse interface {
@@ -188,17 +184,17 @@ func SerialHeader(header http.Header) string {
 			sb.WriteString(k)
 			sb.WriteByte('=')
 			sb.WriteString(vs[0])
-			sb.Write(_headerDivide)
+			sb.Write(_divide)
 		} else if len(vs) == 0 {
 			sb.WriteString(k)
 			sb.WriteByte('=')
-			sb.Write(_headerDivide)
+			sb.Write(_divide)
 		} else {
 			for _, v := range vs {
 				sb.WriteString(k)
 				sb.WriteByte('=')
 				sb.WriteString(v)
-				sb.Write(_headerDivide)
+				sb.Write(_divide)
 			}
 		}
 	}
@@ -206,9 +202,9 @@ func SerialHeader(header http.Header) string {
 	return sb.String()
 }
 
-// EscapeQuotes 转义请求中的特殊字符
-func EscapeQuotes(s string) string {
-	return _quoteReplacer.Replace(s)
+// Escape 转义请求中的特殊字符
+func Escape(s string) string {
+	return _escape.Replace(s)
 }
 
 // IsTextType 根据 contentType 判断是否为文本类型

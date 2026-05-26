@@ -421,7 +421,7 @@ func (c *Client) PostStream(path string, header http.Header, values map[string]s
 	}
 	if stream != nil {
 		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, EscapeQuotes(field), EscapeQuotes(filename)))
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, Escape(field), Escape(filename)))
 		h.Set("Content-Type", mimeType)
 		part, err := writer.CreatePart(h)
 		if err != nil {
