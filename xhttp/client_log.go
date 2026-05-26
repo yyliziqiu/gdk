@@ -25,39 +25,50 @@ func (c *Client) logRequest(req *http.Request, reqbody []byte, res *http.Respons
 	switch c.logHeader {
 	case LogHeaderNone:
 		if err == nil {
-			c.logInfo(logFormat01, status, method, rawurl, reqstr, resstr, cost)
+			c.logger.Info(c.lp(c.fs(logFormat01, status, method, rawurl, reqstr, resstr, cost)))
 		} else {
-			c.logInfo(logFormat02, status, method, rawurl, reqstr, resstr, err, cost)
+			c.logger.Info(c.lp(c.fs(logFormat02, status, method, rawurl, reqstr, resstr, err, cost)))
 		}
 	case LogHeaderReq:
 		header := SerialHeader(req.Header, c.logForbid)
 		if err == nil {
-			c.logInfo(logFormat11, status, method, rawurl, header, reqstr, resstr, cost)
+			c.logger.Info(c.lp(c.fs(logFormat11, status, method, rawurl, header, reqstr, resstr, cost)))
 		} else {
-			c.logInfo(logFormat12, status, method, rawurl, header, reqstr, resstr, err, cost)
+			c.logger.Info(c.lp(c.fs(logFormat12, status, method, rawurl, header, reqstr, resstr, err, cost)))
 		}
 	case LogHeaderRes:
 		header := SerialHeader(res.Header, c.logForbid)
 		if err == nil {
-			c.logInfo(logFormat21, status, method, rawurl, reqstr, header, resstr, cost)
+			c.logger.Info(c.lp(c.fs(logFormat21, status, method, rawurl, reqstr, header, resstr, cost)))
 		} else {
-			c.logInfo(logFormat22, status, method, rawurl, reqstr, header, resstr, err, cost)
+			c.logger.Info(c.lp(c.fs(logFormat22, status, method, rawurl, reqstr, header, resstr, err, cost)))
 		}
 	case LogHeaderBoth:
 		reqhead := SerialHeader(req.Header, c.logForbid)
 		reshead := SerialHeader(res.Header, c.logForbid)
 		if err == nil {
-			c.logInfo(logFormat31, status, method, rawurl, reqhead, reqstr, reshead, resstr, cost)
+			c.logger.Info(c.lp(c.fs(logFormat31, status, method, rawurl, reqhead, reqstr, reshead, resstr, cost)))
 		} else {
-			c.logInfo(logFormat32, status, method, rawurl, reqhead, reqstr, reshead, resstr, err, cost)
+			c.logger.Info(c.lp(c.fs(logFormat32, status, method, rawurl, reqhead, reqstr, reshead, resstr, err, cost)))
 		}
 	}
+}
+
+func (c *Client) fs(format string, args ...any) string {
+	return fmt.Sprintf(format, args...)
+}
+
+func (c *Client) lp(msg string) string {
+	if c.logEscape {
+		msg = c.logChange.Replace(msg)
+	}
+	return msg
 }
 
 // 记录 info 日志
 func (c *Client) logInfo(format string, args ...any) {
 	if c.logger != nil {
-		c.logger.Info(c.logPretty(fmt.Sprintf(format, args...)))
+		c.logger.Infof(format, args...)
 	}
 }
 
@@ -66,14 +77,6 @@ func (c *Client) logWarn(format string, args ...any) {
 	if c.logger != nil {
 		c.logger.Warnf(format, args...)
 	}
-}
-
-// 格式化日志
-func (c *Client) logPretty(msg string) string {
-	if c.logEscape {
-		msg = c.logChange.Replace(msg)
-	}
-	return msg
 }
 
 // 向控制台打印请求内容
