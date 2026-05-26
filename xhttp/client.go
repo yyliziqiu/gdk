@@ -27,8 +27,9 @@ type Client struct {
 	prefix        string                         // URL 前缀
 	errtyp        reflect.Type                   // 响应失败时的 JSON 结构，必须实现 error 接口且不能设置为指针。在成功和失败响应的 JSON 结构不一致时设置
 	dumps         bool                           // 将 HTTP 报文打印到控制台，调试用
-	logLength     int                            // 最大日志长度，此处是字符数而非字节数
-	logHeader     uint                           // 日志中是否保存请求头
+	logLength     [2]int                         // 请求体或响应体的最大日志长度，此处是字符数而非字节数
+	logHeader     uint                           // 日志中是否记录请求头或响应头
+	logForbid     []string                       // 当 logHeader 开启时，设置需要屏蔽的头部字段
 	logAlways     bool                           // 是否记录所有响应体日志。默认为 true，若接口中存在二进制数据流响应需要将此值置为 false
 	logEscape     bool                           // 是否转换日志中的特殊字符
 	logChange     *strings.Replacer              // 字符替换器
@@ -42,8 +43,9 @@ func New(options ...Option) *Client {
 		logger:    nil,
 		format:    FormatJson,
 		prefix:    "",
-		logLength: 2048,
+		logLength: [2]int{1024, 1024},
 		logHeader: LogHeaderNone,
+		logForbid: []string{},
 		logAlways: true,
 		logEscape: false,
 		logChange: _replacer,

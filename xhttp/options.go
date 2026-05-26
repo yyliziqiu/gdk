@@ -88,15 +88,21 @@ func Dumps(enabled bool) Option {
 	}
 }
 
-func LogLength(n int) Option {
+func LogLength(reqLen int, resLen int) Option {
 	return func(cli *Client) {
-		cli.logLength = n
+		cli.logLength = [2]int{reqLen, resLen}
 	}
 }
 
 func LogHeader(o uint) Option {
 	return func(cli *Client) {
 		cli.logHeader = o
+	}
+}
+
+func LogForbid(forbid []string) Option {
+	return func(cli *Client) {
+		cli.logForbid = forbid
 	}
 }
 

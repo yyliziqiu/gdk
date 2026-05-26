@@ -37,14 +37,14 @@ const (
 	logFormat32 = "Request fail(%d), method: %s, url: %s, reqhead: %s, reqbody: %s, reshead: %s, resbody: %s, error: %v, cost: %s."
 )
 
-var (
-	// 字符替换映射
-	_replacer = strings.NewReplacer(
-		"\t", "\\t",
-		"\r", "\\r",
-		"\n", "\\n",
-	)
+// 字符替换映射
+var _replacer = strings.NewReplacer(
+	"\t", "\\t",
+	"\r", "\\r",
+	"\n", "\\n",
+)
 
+var (
 	// HTTP 头部序列化分隔符
 	_divide = []byte{';', ' '}
 
@@ -159,47 +159,63 @@ func AppendQuery(rurl string, query url.Values) string {
 }
 
 // SerialHeader 序列化请求头
-func SerialHeader(header http.Header) string {
+func SerialHeader(header http.Header, forbid []string) string {
 	if len(header) == 0 {
 		return ""
 	}
 
 	length := 0
 	for k, vs := range header {
-		if len(vs) == 1 {
-			length += len(k) + len(vs[0]) + 3
-		} else if len(vs) == 0 {
-			length += len(k) + 3
-		} else {
-			for _, v := range vs {
-				length += len(k) + len(v) + 3
+		if !inArrayString(forbid, k) {
+			if len(vs) == 1 {
+				length += len(k) + len(vs[0]) + 3
+			} else if len(vs) == 0 {
+				length += len(k) + 3
+			} else {
+				for _, v := range vs {
+					length += len(k) + len(v) + 3
+				}
 			}
 		}
 	}
 
 	sb := strings.Builder{}
-	sb.Grow(length + 64)
+	sb.Grow(length + 32)
 	for k, vs := range header {
-		if len(vs) == 1 {
-			sb.WriteString(k)
-			sb.WriteByte('=')
-			sb.WriteString(vs[0])
-			sb.Write(_divide)
-		} else if len(vs) == 0 {
-			sb.WriteString(k)
-			sb.WriteByte('=')
-			sb.Write(_divide)
-		} else {
-			for _, v := range vs {
+		if !inArrayString(forbid, k) {
+			if len(vs) == 1 {
 				sb.WriteString(k)
 				sb.WriteByte('=')
-				sb.WriteString(v)
+				sb.WriteString(vs[0])
 				sb.Write(_divide)
+			} else if len(vs) == 0 {
+				sb.WriteString(k)
+				sb.WriteByte('=')
+				sb.Write(_divide)
+			} else {
+				for _, v := range vs {
+					sb.WriteString(k)
+					sb.WriteByte('=')
+					sb.WriteString(v)
+					sb.Write(_divide)
+				}
 			}
 		}
 	}
 
 	return sb.String()
+}
+
+func inArrayString(arr []string, str string) bool {
+	if len(arr) == 0 {
+		return false
+	}
+	for _, v := range arr {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
 
 // Escape 转义请求中的特殊字符
