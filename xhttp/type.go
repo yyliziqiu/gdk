@@ -1,7 +1,6 @@
 package xhttp
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -56,6 +55,9 @@ var _textTypes = []string{
 	"application/json",
 	"application/xml",
 }
+
+// HTTP 头分隔符
+var _headerDivide = []byte{';', ' '}
 
 // JsonResponse 判断响应是否失败
 type JsonResponse interface {
@@ -163,17 +165,45 @@ func AppendQuery(rurl string, query url.Values) string {
 // SerialHeader 序列化请求头
 func SerialHeader(header http.Header) string {
 	if len(header) == 0 {
-		return "-"
+		return ""
 	}
 
-	m := make(map[string]string, len(header))
-	for key := range header {
-		m[key] = header.Get(key)
+	length := 0
+	for k, vs := range header {
+		if len(vs) == 1 {
+			length += len(k) + len(vs[0]) + 3
+		} else if len(vs) == 0 {
+			length += len(k) + 3
+		} else {
+			for _, v := range vs {
+				length += len(k) + len(v) + 3
+			}
+		}
 	}
 
-	bs, _ := json.Marshal(m)
+	sb := strings.Builder{}
+	sb.Grow(length + 64)
+	for k, vs := range header {
+		if len(vs) == 1 {
+			sb.WriteString(k)
+			sb.WriteByte('=')
+			sb.WriteString(vs[0])
+			sb.Write(_headerDivide)
+		} else if len(vs) == 0 {
+			sb.WriteString(k)
+			sb.WriteByte('=')
+			sb.Write(_headerDivide)
+		} else {
+			for _, v := range vs {
+				sb.WriteString(k)
+				sb.WriteByte('=')
+				sb.WriteString(v)
+				sb.Write(_headerDivide)
+			}
+		}
+	}
 
-	return string(bs)
+	return sb.String()
 }
 
 // EscapeQuotes 转义请求中的特殊字符

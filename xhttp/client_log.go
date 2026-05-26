@@ -57,20 +57,19 @@ func (c *Client) logRequest(req *http.Request, reqbody []byte, res *http.Respons
 // 记录 info 日志
 func (c *Client) logInfo(format string, args ...any) {
 	if c.logger != nil {
-		c.logger.Info(c.logFormat(format, args...))
+		c.logger.Info(c.logPretty(fmt.Sprintf(format, args...)))
 	}
 }
 
 // 记录 warn 日志
 func (c *Client) logWarn(format string, args ...any) {
 	if c.logger != nil {
-		c.logger.Warn(c.logFormat(format, args...))
+		c.logger.Warn(c.logPretty(fmt.Sprintf(format, args...)))
 	}
 }
 
 // 格式化日志
-func (c *Client) logFormat(format string, args ...any) string {
-	msg := fmt.Sprintf(format, args...)
+func (c *Client) logPretty(msg string) string {
 	if c.logLength <= 0 {
 		return ""
 	}
