@@ -94,6 +94,12 @@ func LogLength(reqLen int, resLen int) Option {
 	}
 }
 
+func LogAlways(always bool) Option {
+	return func(cli *Client) {
+		cli.logAlways = always
+	}
+}
+
 func LogHeader(o uint) Option {
 	return func(cli *Client) {
 		cli.logHeader = o
@@ -103,12 +109,6 @@ func LogHeader(o uint) Option {
 func LogForbid(forbid []string) Option {
 	return func(cli *Client) {
 		cli.logForbid = forbid
-	}
-}
-
-func LogAlways(always bool) Option {
-	return func(cli *Client) {
-		cli.logAlways = always
 	}
 }
 
