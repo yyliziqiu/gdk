@@ -8,11 +8,12 @@ import (
 
 func TestSerialHeader(t *testing.T) {
 	str := SerialHeader(http.Header{
-		"Server":       []string{"\"Agent\""},
 		"Content-Type": []string{"application/json"},
 		"Set-Cookie":   []string{"test=test", "name=name"},
-		"X-Custom":     []string{},
-	})
+		"X-Custom1":    []string{},
+		"X-Custom2":    []string{"\"Agent\""},
+		"X-Custom3":    []string{"xxxxxxxxxxxxxxxxx"},
+	}, []string{"X-Custom3"})
 
 	fmt.Println("Header String: ", str)
 	fmt.Println("Header Length: ", len(str))
