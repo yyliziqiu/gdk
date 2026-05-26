@@ -28,7 +28,8 @@ type Client struct {
 	errtyp        reflect.Type                   // 响应失败时的 JSON 结构，必须实现 error 接口且不能设置为指针。在成功和失败响应的 JSON 结构不一致时设置
 	dumps         bool                           // 将 HTTP 报文打印到控制台，调试用
 	logLength     int                            // 最大日志长度，此处是字符数而非字节数
-	logHeader     bool                           // 日志中是否保存请求头
+	logHeader     uint                           // 日志中是否保存请求头
+	logAlways     bool                           // 是否记录所有响应体日志。默认为 true，若接口中存在二进制数据流响应需要将此值置为 false
 	logEscape     bool                           // 是否转换日志中的特殊字符
 	logChange     *strings.Replacer              // 字符替换器
 	requestBefore func(req *http.Request)        // 在发送请求前调用
@@ -42,7 +43,8 @@ func New(options ...Option) *Client {
 		format:    FormatJson,
 		prefix:    "",
 		logLength: 2048,
-		logHeader: false,
+		logHeader: LogHeaderNone,
+		logAlways: true,
 		logEscape: false,
 		logChange: _replacer,
 	}
@@ -97,7 +99,7 @@ func (c *Client) newRequest(method string, path string, query url.Values, header
 func (c *Client) doRequest(req *http.Request, out any, reqbody []byte) (*http.Response, []byte, error) {
 	c.dumpRequest(req)
 
-	timer := xtime.NewTimer()
+	tim := xtime.NewTimer()
 
 	res, err := c.client.Do(req)
 	if err != nil {
@@ -108,10 +110,10 @@ func (c *Client) doRequest(req *http.Request, out any, reqbody []byte) (*http.Re
 	resbody, err := c.handleResponse(res, out)
 	res.Body.Close()
 
-	if out == nil {
-		c.logRequest(req, reqbody, res.StatusCode, nil, err, timer.Stops())
+	if c.logAlways || out != nil || IsTextType(res.Header.Get("Content-Type")) {
+		c.logRequest(req, reqbody, res, resbody, err, tim.Stops())
 	} else {
-		c.logRequest(req, reqbody, res.StatusCode, resbody, err, timer.Stops())
+		c.logRequest(req, reqbody, res, nil, err, tim.Stops())
 	}
 
 	return res, resbody, err

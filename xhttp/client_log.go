@@ -9,42 +9,63 @@ import (
 )
 
 // 记录请求日志
-const (
-	logFormat1 = "Request done(%d), method: %s, url: %s, header: %s, request: %s, response: %s, cost: %s."
-	logFormat2 = "Request fail(%d), method: %s, url: %s, header: %s, request: %s, response: %s, error: %v, cost: %s."
-)
-
-func (c *Client) logRequest(req *http.Request, reqbody []byte, status int, resbody []byte, err error, cost string) {
+func (c *Client) logRequest(req *http.Request, reqbody []byte, res *http.Response, resbody []byte, err error, cost string) {
 	if c.logger == nil {
 		return
 	}
 
-	headers := "-"
-	if c.logHeader {
-		headers = SerialHeader(req.Header)
-	}
+	var (
+		status = res.StatusCode
+		method = req.Method
+		rawurl = req.URL.String()
+		reqstr = string(reqbody)
+		resstr = string(resbody)
+	)
 
-	if err == nil {
-		c.logInfo(logFormat1, status, req.Method, req.URL, headers, string(reqbody), string(resbody), cost)
-	} else {
-		c.logInfo(logFormat2, status, req.Method, req.URL, headers, string(reqbody), string(resbody), err, cost)
+	switch c.logHeader {
+	case LogHeaderNone:
+		if err == nil {
+			c.logInfo(logFormat01, status, method, rawurl, reqstr, resstr, cost)
+		} else {
+			c.logInfo(logFormat02, status, method, rawurl, reqstr, resstr, err, cost)
+		}
+	case LogHeaderReq:
+		header := SerialHeader(req.Header)
+		if err == nil {
+			c.logInfo(logFormat11, status, method, rawurl, header, reqstr, resstr, cost)
+		} else {
+			c.logInfo(logFormat12, status, method, rawurl, header, reqstr, resstr, err, cost)
+		}
+	case LogHeaderRes:
+		header := SerialHeader(res.Header)
+		if err == nil {
+			c.logInfo(logFormat21, status, method, rawurl, reqstr, header, resstr, cost)
+		} else {
+			c.logInfo(logFormat22, status, method, rawurl, reqstr, header, resstr, err, cost)
+		}
+	case LogHeaderBoth:
+		reqhead := SerialHeader(req.Header)
+		reshead := SerialHeader(res.Header)
+		if err == nil {
+			c.logInfo(logFormat31, status, method, rawurl, reqhead, reqstr, reshead, resstr, cost)
+		} else {
+			c.logInfo(logFormat32, status, method, rawurl, reqhead, reqstr, reshead, resstr, err, cost)
+		}
 	}
 }
 
 // 记录 info 日志
 func (c *Client) logInfo(format string, args ...any) {
-	if c.logger == nil {
-		return
+	if c.logger != nil {
+		c.logger.Info(c.logFormat(format, args...))
 	}
-	c.logger.Info(c.logFormat(format, args...))
 }
 
 // 记录 warn 日志
 func (c *Client) logWarn(format string, args ...any) {
-	if c.logger == nil {
-		return
+	if c.logger != nil {
+		c.logger.Warn(c.logFormat(format, args...))
 	}
-	c.logger.Warn(c.logFormat(format, args...))
 }
 
 // 格式化日志

@@ -94,9 +94,15 @@ func LogLength(n int) Option {
 	}
 }
 
-func LogHeader(enabled bool) Option {
+func LogHeader(o uint) Option {
 	return func(cli *Client) {
-		cli.logHeader = enabled
+		cli.logHeader = o
+	}
+}
+
+func LogAlways(always bool) Option {
+	return func(cli *Client) {
+		cli.logAlways = always
 	}
 }
 
