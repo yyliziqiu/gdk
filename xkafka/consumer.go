@@ -3,7 +3,7 @@ package xkafka
 import (
 	"fmt"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 func NewConsumer(config ConsumerConfig) (*kafka.Consumer, error) {
@@ -24,18 +24,18 @@ func NewConsumer2(sc ServerConfig, cc ConsumerConfig) (*kafka.Consumer, error) {
 	return NewConsumer(cc.Default())
 }
 
-// func consume(consumer *kafka.Consumer) {
-// 	for {
-// 		select {
-// 		case <-quit:
-// 			log.Info("[runConsumeKafkaMessage] Quit.")
-// 			return
-// 		default:
-// 			msg, err := consumer.ReadMessage(-1)
-// 			if err != nil {
-// 				continue
-// 			}
-// 			// to do something
-// 		}
-// 	}
-// }
+func RunConsume(consumer *kafka.Consumer, quit chan bool) {
+	for {
+		select {
+		case <-quit:
+			fmt.Println("Quit.")
+			return
+		default:
+			msg, err := consumer.ReadMessage(-1)
+			if err != nil {
+				continue
+			}
+			fmt.Println(string(msg.Value))
+		}
+	}
+}

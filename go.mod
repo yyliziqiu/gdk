@@ -1,11 +1,11 @@
 module github.com/yyliziqiu/gdk
 
-go 1.24.0
+go 1.24.3
 
 toolchain go1.24.6
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/confluentinc/confluent-kafka-go/v2 v2.14.1
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.9.3
