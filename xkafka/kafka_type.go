@@ -6,6 +6,8 @@ import (
 
 const DefaultId = "default"
 
+// Config
+// 参考：https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 type Config struct {
 	Server    ServerConfig
 	Producers []ProducerConfig
