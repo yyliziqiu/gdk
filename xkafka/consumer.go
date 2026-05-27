@@ -24,7 +24,7 @@ func NewConsumer2(sc ServerConfig, cc ConsumerConfig) (*kafka.Consumer, error) {
 	return NewConsumer(cc.Default())
 }
 
-func RunConsume(consumer *kafka.Consumer, quit chan bool) {
+func RunConsumer(consumer *kafka.Consumer, quit chan bool) {
 	for {
 		select {
 		case <-quit:
