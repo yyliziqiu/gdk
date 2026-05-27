@@ -4,29 +4,39 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/http"
 	"path/filepath"
+
+	"github.com/yyliziqiu/gdk/xutil"
 )
 
 // ForwardBinary 转发二进制数据
-func (c *Client) ForwardBinary(path string, header http.Header, src string, out any) error {
+func (c *Client) ForwardBinary(src string, dst string, header http.Header, out any) error {
 	data, typ, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
 	}
-	return c.PostBinary(path, header, typ, bytes.NewReader(data), out)
+	return c.PostBinary(dst, header, typ, bytes.NewReader(data), out)
 }
 
 // ForwardStream 以 multipart/form-data 形式转发流数据
-func (c *Client) ForwardStream(path string, header http.Header, values map[string]string, field string, mimeTyp string, src string, out any) error {
-	data, _, err := c.GetBinary(src, nil, nil)
+func (c *Client) ForwardStream(src string, dst string, header http.Header, values map[string]string, field string, out any) error {
+	data, ct, err := c.GetBinary(src, nil, nil)
 	if err != nil {
 		return err
 	}
-	return c.PostStream(path, header, values, field, filepath.Base(src), mimeTyp, bytes.NewReader(data), out)
+
+	mt, _, err := mime.ParseMediaType(ct)
+	if err != nil {
+		mt = xutil.ParseMimeType(src)
+	}
+
+	return c.PostStream(dst, header, values, field, filepath.Base(src), mt, bytes.NewReader(data), out)
 }
 
 // ======================== 以下方法会返回响应中的消息体 ========================
+
 func (c *Client) get2(method string, path string, header http.Header, out any) ([]byte, error) {
 	req, err := c.newRequest(method, path, nil, header, nil)
 	if err != nil {
