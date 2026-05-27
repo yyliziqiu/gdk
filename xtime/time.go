@@ -5,17 +5,23 @@ import (
 	"time"
 )
 
+// 时间单位
+var _units = []string{"ns", "us", "ms", "s"}
+
 // DateTime 获取当前时间
 func DateTime() string {
 	return time.Now().Format(time.DateTime)
+}
+
+// DateTimeIn 获取当前时间
+func DateTimeIn(loc *time.Location) string {
+	return time.Now().In(loc).Format(time.DateTime)
 }
 
 // Timestamp 获取当前时间的时间戳
 func Timestamp() int64 {
 	return time.Now().Unix()
 }
-
-var _units = []string{"ns", "us", "ms", "s"}
 
 // ManualDuration 优化 time.Duration 显示
 func ManualDuration(d time.Duration) string {
