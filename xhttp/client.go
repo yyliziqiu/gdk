@@ -112,7 +112,7 @@ func (c *Client) doRequest(req *http.Request, out any, reqbody []byte) (*http.Re
 	resbody, err := c.handleResponse(res, out)
 	res.Body.Close()
 
-	if c.logAlways || out != nil || IsTextType(res.Header.Get("Content-Type")) {
+	if c.logAlways || IsTextType(res.Header.Get("Content-Type")) {
 		c.logRequest(req, reqbody, res, resbody, err, tim.Stops())
 	} else {
 		c.logRequest(req, reqbody, res, nil, err, tim.Stops())
@@ -194,9 +194,9 @@ func (c *Client) handleJsonResponse(status int, body []byte, out any) error {
 			return ret.(error)
 		}
 	} else if out != nil {
-		if err := json.Unmarshal(body, out); err == nil {
-			if err2, ok2 := out.(error); ok2 {
-				return err2
+		if serr, sok := out.(error); sok {
+			if err := json.Unmarshal(body, serr); err == nil {
+				return serr
 			}
 		}
 	}
