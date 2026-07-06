@@ -13,13 +13,28 @@ func DateTime() string {
 	return time.Now().Format(time.DateTime)
 }
 
-// DateTimeIn 获取当前时间
+// DateTimeIn 根据指定时区获取当前时间
 func DateTimeIn(loc *time.Location) string {
 	return time.Now().In(loc).Format(time.DateTime)
 }
 
 // Timestamp 获取当前时间的时间戳
 func Timestamp() int64 {
+	return time.Now().Unix()
+}
+
+// DT 获取当前时间
+func DT() string {
+	return time.Now().Format(time.DateTime)
+}
+
+// In 根据指定时区获取当前时间
+func In(loc *time.Location) string {
+	return time.Now().In(loc).Format(time.DateTime)
+}
+
+// TS 获取当前时间的时间戳
+func TS() int64 {
 	return time.Now().Unix()
 }
 
