@@ -30,19 +30,19 @@ func (t *Trie) Add(prefix string, data any) {
 		return
 	}
 
-	curr := t.root
+	prev := t.root
 	for i := 0; i < len(prefix); i++ {
 		c := prefix[i]
-		next, ok := curr.Next[c]
+		curr, ok := prev.Next[c]
 		if !ok {
-			next = &Node{Next: map[byte]*Node{}}
-			curr.Next[c] = next
+			curr = &Node{Next: map[byte]*Node{}}
+			prev.Next[c] = curr
 		}
-		curr = next
+		prev = curr
 	}
 
-	curr.Data = data
-	curr.Leaf = true
+	prev.Data = data
+	prev.Leaf = true
 }
 
 // Exist 判断 Tire 树中是否存在指定字符串的前缀
