@@ -10,7 +10,7 @@ type Node struct {
 	Next map[byte]*Node
 }
 
-func New() *Trie {
+func NewTrie() *Trie {
 	return &Trie{
 		root: &Node{
 			Leaf: false,
@@ -45,41 +45,37 @@ func (t *Trie) Add(prefix string, data any) {
 	curr.Leaf = true
 }
 
-// Exist 判断是否存在指定字符串
+// Exist 判断 Tire 树中是否存在指定字符串的前缀
 func (t *Trie) Exist(str string) (any, bool) {
-	curr := t.root
+	prev := t.root
 	for i := 0; i < len(str); i++ {
-		c := str[i]
-		next, ok := curr.Next[c]
+		curr, ok := prev.Next[str[i]]
 		if !ok {
 			return nil, false
 		}
-		curr = next
+		if curr.Leaf {
+			return curr.Data, true
+		}
+		prev = curr
 	}
-
-	if !curr.Leaf {
-		return nil, false
-	}
-
-	return curr.Data, true
+	return nil, false
 }
 
-// Match 判断是否存在指定字符串的前缀，最长匹配
+// Match 判断 Tire 树中是否存在指定字符串的前缀，最长匹配
 // n 最多匹配位数
 func (t *Trie) Match(str string, n int) (any, bool) {
 	var data any
 
-	curr := t.root
-	for i := 0; i < len(str) && i <= n; i++ {
-		c := str[i]
-		next, ok := curr.Next[c]
+	prev := t.root
+	for i := 0; i <= n && i < len(str); i++ {
+		curr, ok := prev.Next[str[i]]
 		if !ok {
 			break
 		}
-		if next.Leaf {
-			data = next.Data
+		if curr.Leaf {
+			data = curr.Data
 		}
-		curr = next
+		prev = curr
 	}
 
 	return data, data != nil
