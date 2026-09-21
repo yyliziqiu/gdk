@@ -56,116 +56,104 @@ func (k Kvs) Duration(key string) (time.Duration, bool) {
 
 // 2. key 不存在时，返回默认值
 
-func (k Kvs) S(key string, def string) string {
+func (k Kvs) GetString(key string, def ...string) string {
 	if val, ok := k.String(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return ""
 }
 
-func (k Kvs) B(key string, def bool) bool {
+func (k Kvs) GetBool(key string, def ...bool) bool {
 	if val, ok := k.Bool(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return false
 }
 
-func (k Kvs) I(key string, def int) int {
+func (k Kvs) GetInt(key string, def ...int) int {
 	if val, ok := k.Int(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
-func (k Kvs) I64(key string, def int64) int64 {
+func (k Kvs) GetInt64(key string, def ...int64) int64 {
 	if val, ok := k.Int64(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
-func (k Kvs) F64(key string, def float64) float64 {
+func (k Kvs) GetFloat64(key string, def ...float64) float64 {
 	if val, ok := k.Float64(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
-func (k Kvs) D(key string, def time.Duration) time.Duration {
+func (k Kvs) GetDuration(key string, def ...time.Duration) time.Duration {
 	if val, ok := k.Duration(key); ok {
 		return val
 	}
-	return def
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
-// 3. 先将 key 全部转化为小写再查询
-
-func (k Kvs) S2(key string, def string) string {
-	return k.S(strings.ToLower(key), def)
-}
-
-func (k Kvs) B2(key string, def bool) bool {
-	return k.B(strings.ToLower(key), def)
-}
-
-func (k Kvs) I2(key string, def int) int {
-	return k.I(strings.ToLower(key), def)
-}
-
-func (k Kvs) I642(key string, def int64) int64 {
-	return k.I64(strings.ToLower(key), def)
-}
-
-func (k Kvs) F642(key string, def float64) float64 {
-	return k.F64(strings.ToLower(key), def)
-}
-
-func (k Kvs) D2(key string, def time.Duration) time.Duration {
-	return k.D(strings.ToLower(key), def)
-}
-
-// 4. 常用 key
+// 3. 常用 key
 
 func (k Kvs) Get(key string) string {
-	return k.S(key, "")
-}
-
-func (k Kvs) Get2(key string) string {
-	return k.Get(strings.ToLower(key))
+	return k.GetString(key)
 }
 
 func (k Kvs) Id() string {
-	return k.S("id", "")
+	return k.GetString("id")
 }
 
 func (k Kvs) Type() string {
-	return k.S("type", "")
+	return k.GetString("type")
 }
 
 func (k Kvs) Name() string {
-	return k.S("name", "")
+	return k.GetString("name")
 }
 
 func (k Kvs) Slug() string {
-	return k.S("slug", "")
+	return k.GetString("slug")
 }
 
 func (k Kvs) Key() string {
-	return k.S("key", "")
+	return k.GetString("key")
 }
 
 func (k Kvs) Url() string {
-	return k.S("url", "")
+	return k.GetString("url")
 }
 
 func (k Kvs) Token() string {
-	return k.S("token", "")
+	return k.GetString("token")
 }
 
 func (k Kvs) Enable() bool {
-	return k.B("enable", false)
+	return k.GetBool("enable")
 }
 
 func (k Kvs) Disable() bool {
-	return k.B("disable", false)
+	return k.GetBool("disable")
 }
