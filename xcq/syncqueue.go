@@ -100,9 +100,9 @@ func (t *SyncQueue) Pops2(f Filter) {
 	t.mu.Unlock()
 }
 
-func (t *SyncQueue) Slide(item any, rf Remove) (ris []any) {
+func (t *SyncQueue) Slide(item any, rm Remove) (ris []any) {
 	t.mu.Lock()
-	ris = t.qu.Slide(item, rf)
+	ris = t.qu.Slide(item, rm)
 	t.mu.Unlock()
 	return
 }
@@ -114,9 +114,9 @@ func (t *SyncQueue) SlideN(item any, n int) (ris []any) {
 	return
 }
 
-func (t *SyncQueue) Walk(f Handle, reverse bool) {
+func (t *SyncQueue) Walk(h Handle, reverse bool) {
 	t.mu.Lock()
-	t.qu.Walk(f, reverse)
+	t.qu.Walk(h, reverse)
 	t.mu.Unlock()
 }
 

@@ -88,9 +88,9 @@ func (q *Queue) Pops2(f Filter) {
 
 // Slide 在队列尾部添加1个元素，并从队列头部开始直到第一个不需要删除的
 // 元素出现，该元素前面的元素全部删除并返回被删除的元素，类似于滑动窗口
-func (q *Queue) Slide(item any, rf Remove) (ris []any) {
+func (q *Queue) Slide(item any, rm Remove) (ris []any) {
 	q.push(item)
-	for !q.empty() && rf(q.list[q.head]) {
+	for !q.empty() && rm(q.list[q.head]) {
 		if ri, ok := q.pop(); ok {
 			ris = append(ris, ri)
 		}
@@ -117,21 +117,21 @@ func (q *Queue) SlideN(item any, n int) (ris []any) {
 }
 
 // Walk 遍历队列
-// reverse false：从头到尾遍历，true：从尾到头遍历
-func (q *Queue) Walk(f Handle, reverse bool) {
+// reverse is false：从头到尾遍历，true：从尾到头遍历
+func (q *Queue) Walk(h Handle, reverse bool) {
 	if reverse {
 		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
-			f(q.list[i])
+			h(q.list[i])
 		}
 	} else {
 		for i := q.head; i != q.tail; i = q.next(i) {
-			f(q.list[i])
+			h(q.list[i])
 		}
 	}
 }
 
 // Find 遍历队列，返回第一个符合条件的元素
-// reverse false：从头到尾遍历，true：从尾到头遍历
+// reverse is false：从头到尾遍历，true：从尾到头遍历
 func (q *Queue) Find(f Filter, reverse bool) (ret any, pos int) {
 	pos = -1
 	if reverse {
@@ -164,6 +164,7 @@ func (q *Queue) FindAll(f Filter) []any {
 }
 
 // TerminalN 获取队列前/后 n 个 item
+// reverse is false：从头到尾遍历，true：从尾到头遍历
 func (q *Queue) TerminalN(n int, reverse bool) []any {
 	ret := make([]any, 0, n)
 	if n > q.len() {
@@ -182,6 +183,7 @@ func (q *Queue) TerminalN(n int, reverse bool) []any {
 }
 
 // Terminal 获取队列前/后多个符合条件的 item，遇到第一个不符合条件的 item 停止遍历
+// reverse is false：从头到尾遍历，true：从尾到头遍历
 func (q *Queue) Terminal(f Filter, reverse bool) []any {
 	ret := make([]any, 0)
 	if reverse {
