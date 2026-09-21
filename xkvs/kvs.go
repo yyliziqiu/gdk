@@ -162,10 +162,10 @@ func (k Kvs) Token() string {
 	return k.S("token", "")
 }
 
-func (k Kvs) Enabled() bool {
-	return k.B("enabled", false)
+func (k Kvs) Enable() bool {
+	return k.B("enable", false)
 }
 
-func (k Kvs) Disabled() bool {
-	return k.B("disabled", false)
+func (k Kvs) Disable() bool {
+	return k.B("disable", false)
 }

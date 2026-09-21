@@ -59,33 +59,26 @@ func (q *Queue) Pop() (any, bool) {
 	return q.pop()
 }
 
-// Filter 元素符合条件返回 true，否则返回 false
-type Filter func(item any) bool
-
 // Pops 从队列头开始弹出所有符合条件的元素，直到遇到第一个不符合条件的元素停止
-func (q *Queue) Pops(filter Filter) []any {
+func (q *Queue) Pops(f Filter) []any {
 	ret := make([]any, 0)
-
 	for q.head != q.tail {
 		item := q.list[q.head]
-		ok := filter(item)
-		if !ok {
+		if ok := f(item); !ok {
 			break
 		}
 		ret = append(ret, item)
 		q.list[q.head] = nil
 		q.head = q.headnext()
 	}
-
 	return ret
 }
 
 // Pops2 从队列头开始弹出所有符合条件的元素，直到遇到第一个不符合条件的元素停止
-func (q *Queue) Pops2(filter Filter) {
+func (q *Queue) Pops2(f Filter) {
 	for q.head != q.tail {
 		item := q.list[q.head]
-		ok := filter(item)
-		if !ok {
+		if ok := f(item); !ok {
 			break
 		}
 		q.list[q.head] = nil
@@ -93,50 +86,39 @@ func (q *Queue) Pops2(filter Filter) {
 	}
 }
 
-// Remove 需要删除的元素返回 true，否则返回 false
-type Remove func(item any) bool
-
-// Slide  类似于滑动窗口，在队列尾添加一个元素，并从队列头开始直到第一个不需要删除的元素出现，该元素前面的元素全部删除
-// 第一个返回值表示被删除的元素
-// 第二个返回值表示被删除的元素个数
-func (q *Queue) Slide(item any, rmf Remove) (rmd []any) {
+// Slide 在队列尾部添加1个元素，并从队列头部开始直到第一个不需要删除的
+// 元素出现，该元素前面的元素全部删除并返回被删除的元素，类似于滑动窗口
+func (q *Queue) Slide(item any, rf Remove) (ris []any) {
 	q.push(item)
-
-	for !q.empty() && rmf(q.list[q.head]) {
-		if rm, ok := q.pop(); ok {
-			rmd = append(rmd, rm)
+	for !q.empty() && rf(q.list[q.head]) {
+		if ri, ok := q.pop(); ok {
+			ris = append(ris, ri)
 		}
 	}
-
-	if len(rmd) > 0 && q.debug {
+	if len(ris) > 0 && q.debug {
 		q.print("slide")
 	}
-
-	return rmd
+	return ris
 }
 
-// SlideN 类似于滑动窗口，在队列尾添加一个元素，如果添加完元素队列长度大于 n，则删除前面的元素，最后只保留队列后 n 个元素
-// 第一个返回值表示被删除的元素
-// 第二个返回值表示是窗口否发生了滑动
-func (q *Queue) SlideN(item any, n int) (rmd []any) {
+// SlideN 在队列尾部添加1个元素，如果添加完队列长度大于 n，则删除前面
+// 的元素，最后只保留队列后 n 个元素并返回被删除的元素，类似于滑动窗口
+func (q *Queue) SlideN(item any, n int) (ris []any) {
 	q.push(item)
-
 	for q.len() > n {
-		if rm, ok := q.pop(); ok {
-			rmd = append(rmd, rm)
+		if ri, ok := q.pop(); ok {
+			ris = append(ris, ri)
 		}
 	}
-
-	if len(rmd) > 0 && q.debug {
+	if len(ris) > 0 && q.debug {
 		q.print("slide")
 	}
-
-	return rmd
+	return ris
 }
 
 // Walk 遍历队列
 // reverse false：从头到尾遍历，true：从尾到头遍历
-func (q *Queue) Walk(f func(item any), reverse bool) {
+func (q *Queue) Walk(f Handle, reverse bool) {
 	if reverse {
 		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
 			f(q.list[i])
@@ -150,18 +132,19 @@ func (q *Queue) Walk(f func(item any), reverse bool) {
 
 // Find 遍历队列，返回第一个符合条件的元素
 // reverse false：从头到尾遍历，true：从尾到头遍历
-func (q *Queue) Find(filter Filter, reverse bool) (ret any, idx int) {
+func (q *Queue) Find(f Filter, reverse bool) (ret any, pos int) {
+	pos = -1
 	if reverse {
 		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
-			if item := q.list[i]; filter(item) {
-				ret, idx = item, i
+			if item := q.list[i]; f(item) {
+				ret, pos = item, i
 				break
 			}
 		}
 	} else {
 		for i := q.head; i != q.tail; i = q.next(i) {
-			if item := q.list[i]; filter(item) {
-				ret, idx = item, i
+			if item := q.list[i]; f(item) {
+				ret, pos = item, i
 				break
 			}
 		}
@@ -183,11 +166,9 @@ func (q *Queue) FindAll(f Filter) []any {
 // TerminalN 获取队列前/后 n 个 item
 func (q *Queue) TerminalN(n int, reverse bool) []any {
 	ret := make([]any, 0, n)
-
 	if n > q.len() {
 		n = q.len()
 	}
-
 	if reverse {
 		for i, j := 0, q.tailprev(); i < n && j != q.headprev(); i, j = i+1, q.prev(j) {
 			ret = append(ret, q.list[j])
@@ -197,18 +178,16 @@ func (q *Queue) TerminalN(n int, reverse bool) []any {
 			ret = append(ret, q.list[j])
 		}
 	}
-
 	return ret
 }
 
 // Terminal 获取队列前/后多个符合条件的 item，遇到第一个不符合条件的 item 停止遍历
-func (q *Queue) Terminal(filter Filter, reverse bool) []any {
+func (q *Queue) Terminal(f Filter, reverse bool) []any {
 	ret := make([]any, 0)
-
 	if reverse {
 		for i := q.tailprev(); i != q.headprev(); i = q.prev(i) {
 			item := q.list[i]
-			if !filter(item) {
+			if !f(item) {
 				break
 			}
 			ret = append(ret, item)
@@ -216,13 +195,12 @@ func (q *Queue) Terminal(filter Filter, reverse bool) []any {
 	} else {
 		for i := q.head; i != q.tail; i = q.next(i) {
 			item := q.list[i]
-			if !filter(item) {
+			if !f(item) {
 				break
 			}
 			ret = append(ret, item)
 		}
 	}
-
 	return ret
 }
 
@@ -231,7 +209,6 @@ func (q *Queue) Terminal(filter Filter, reverse bool) []any {
 func (q *Queue) Window(bgn Filter, end Filter) []any {
 	run := false
 	ret := make([]any, 0)
-
 	for i := q.head; i != q.tail; i = q.next(i) {
 		item := q.list[i]
 		if !run && bgn(item) {
@@ -244,7 +221,6 @@ func (q *Queue) Window(bgn Filter, end Filter) []any {
 			ret = append(ret, item)
 		}
 	}
-
 	return ret
 }
 
@@ -256,6 +232,11 @@ func (q *Queue) Reset(data []any) {
 // CopyList 复制列表
 func (q *Queue) CopyList() []any {
 	return q.copyList()
+}
+
+// DupSnap 保存队列数据快照副本
+func (q *Queue) DupSnap(d time.Duration) error {
+	return xsnap.Dup(q.path, q.copyList(), d)
 }
 
 // SaveSnap 保存队列数据快照
@@ -289,9 +270,4 @@ func (q *Queue) LoadSnap(item any) error {
 	q.reset(list)
 
 	return nil
-}
-
-// DupSnap 保存队列数据快照副本
-func (q *Queue) DupSnap(d time.Duration) error {
-	return xsnap.Dup(q.path, q.copyList(), d)
 }

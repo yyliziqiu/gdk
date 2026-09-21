@@ -87,42 +87,42 @@ func (t *SyncQueue) Pop() (any, bool) {
 	return item, ok
 }
 
-func (t *SyncQueue) Pops(filter Filter) []any {
+func (t *SyncQueue) Pops(f Filter) []any {
 	t.mu.Lock()
-	ret := t.qu.Pops(filter)
+	ret := t.qu.Pops(f)
 	t.mu.Unlock()
 	return ret
 }
 
-func (t *SyncQueue) Pops2(filter Filter) {
+func (t *SyncQueue) Pops2(f Filter) {
 	t.mu.Lock()
-	t.qu.Pops2(filter)
+	t.qu.Pops2(f)
 	t.mu.Unlock()
 }
 
-func (t *SyncQueue) Slide(item any, rmf Remove) (rmd []any) {
+func (t *SyncQueue) Slide(item any, rf Remove) (ris []any) {
 	t.mu.Lock()
-	rmd = t.qu.Slide(item, rmf)
-	t.mu.Unlock()
-	return
-}
-
-func (t *SyncQueue) SlideN(item any, n int) (rmd []any) {
-	t.mu.Lock()
-	rmd = t.qu.SlideN(item, n)
+	ris = t.qu.Slide(item, rf)
 	t.mu.Unlock()
 	return
 }
 
-func (t *SyncQueue) Walk(f func(item any), reverse bool) {
+func (t *SyncQueue) SlideN(item any, n int) (ris []any) {
+	t.mu.Lock()
+	ris = t.qu.SlideN(item, n)
+	t.mu.Unlock()
+	return
+}
+
+func (t *SyncQueue) Walk(f Handle, reverse bool) {
 	t.mu.Lock()
 	t.qu.Walk(f, reverse)
 	t.mu.Unlock()
 }
 
-func (t *SyncQueue) Find(filter Filter, reverse bool) (ret any, idx int) {
+func (t *SyncQueue) Find(f Filter, reverse bool) (ret any, pos int) {
 	t.mu.Lock()
-	ret, idx = t.qu.Find(filter, reverse)
+	ret, pos = t.qu.Find(f, reverse)
 	t.mu.Unlock()
 	return
 }
@@ -141,9 +141,9 @@ func (t *SyncQueue) TerminalN(n int, reverse bool) []any {
 	return ret
 }
 
-func (t *SyncQueue) Terminal(filter Filter, reverse bool) []any {
+func (t *SyncQueue) Terminal(f Filter, reverse bool) []any {
 	t.mu.Lock()
-	ret := t.qu.Terminal(filter, reverse)
+	ret := t.qu.Terminal(f, reverse)
 	t.mu.Unlock()
 	return ret
 }
@@ -168,6 +168,13 @@ func (t *SyncQueue) CopyList() []any {
 	return list
 }
 
+func (t *SyncQueue) DupSnap(d time.Duration) error {
+	t.mu.Lock()
+	err := t.qu.DupSnap(d)
+	t.mu.Unlock()
+	return err
+}
+
 func (t *SyncQueue) SaveSnap() error {
 	t.mu.Lock()
 	err := t.qu.SaveSnap()
@@ -178,13 +185,6 @@ func (t *SyncQueue) SaveSnap() error {
 func (t *SyncQueue) LoadSnap(item any) error {
 	t.mu.Lock()
 	err := t.qu.LoadSnap(item)
-	t.mu.Unlock()
-	return err
-}
-
-func (t *SyncQueue) DupSnap(d time.Duration) error {
-	t.mu.Lock()
-	err := t.qu.DupSnap(d)
 	t.mu.Unlock()
 	return err
 }
