@@ -30,33 +30,33 @@ func (t *Trie) Add(prefix string, data any) {
 		return
 	}
 
-	prev := t.root
+	curr := t.root
 	for i := 0; i < len(prefix); i++ {
 		c := prefix[i]
-		curr, ok := prev.Next[c]
+		next, ok := curr.Next[c]
 		if !ok {
-			curr = &Node{Next: map[byte]*Node{}}
-			prev.Next[c] = curr
+			next = &Node{Next: map[byte]*Node{}}
+			curr.Next[c] = next
 		}
-		prev = curr
+		curr = next
 	}
 
-	prev.Data = data
-	prev.Leaf = true
+	curr.Data = data
+	curr.Leaf = true
 }
 
 // Exist 判断 Tire 树中是否存在指定字符串的前缀
 func (t *Trie) Exist(str string) (any, bool) {
-	prev := t.root
+	curr := t.root
 	for i := 0; i < len(str); i++ {
-		curr, ok := prev.Next[str[i]]
+		next, ok := curr.Next[str[i]]
 		if !ok {
 			return nil, false
 		}
-		if curr.Leaf {
-			return curr.Data, true
+		if next.Leaf {
+			return next.Data, true
 		}
-		prev = curr
+		curr = next
 	}
 	return nil, false
 }
@@ -65,18 +65,16 @@ func (t *Trie) Exist(str string) (any, bool) {
 // n 最多匹配位数
 func (t *Trie) Match(str string, n int) (any, bool) {
 	var data any
-
-	prev := t.root
+	curr := t.root
 	for i := 0; i <= n && i < len(str); i++ {
-		curr, ok := prev.Next[str[i]]
+		next, ok := curr.Next[str[i]]
 		if !ok {
 			break
 		}
-		if curr.Leaf {
-			data = curr.Data
+		if next.Leaf {
+			data = next.Data
 		}
-		prev = curr
+		curr = next
 	}
-
 	return data, data != nil
 }
