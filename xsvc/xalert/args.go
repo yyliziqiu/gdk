@@ -13,23 +13,29 @@ import (
 
 type Args map[string]string
 
-func NewArgs(list ...any) (Args, error) {
+func NewArgs(kvs ...any) (Args, error) {
 	args := make(Args, 16)
-	return args.Add(list...)
+	return args.Add(kvs...)
 }
 
-func (t Args) Add(list ...any) (Args, error) {
-	if len(list)%2 != 0 {
-		return t, errors.New("the number of args error")
+func KA(kvs ...any) (string, Args) {
+	args := make(Args, 16)
+	args.MustAdd(kvs...)
+	return args.Key(), args
+}
+
+func (t Args) Add(kvs ...any) (Args, error) {
+	if len(kvs)%2 != 0 {
+		return t, errors.New("the number of args must be even")
 	}
 
-	for i := 0; i < len(list); i += 2 {
-		k, ok := list[i].(string)
+	for i := 0; i < len(kvs); i += 2 {
+		k, ok := kvs[i].(string)
 		if !ok {
 			return t, errors.New("the key type of args must be a string")
 		}
 
-		switch v := list[i+1].(type) {
+		switch v := kvs[i+1].(type) {
 		case string:
 			t[k] = v
 		case bool:
@@ -48,8 +54,8 @@ func (t Args) Add(list ...any) (Args, error) {
 	return t, nil
 }
 
-func (t Args) MustAdd(list ...any) Args {
-	if _, err := t.Add(list...); err != nil {
+func (t Args) MustAdd(kvs ...any) Args {
+	if _, err := t.Add(kvs...); err != nil {
 		xlog.Errorf("[Args.MustAdd] Args error: %v", err)
 	}
 	return t
@@ -65,15 +71,15 @@ var _replacer = strings.NewReplacer(
 )
 
 func (t Args) Key() string {
-	keys := make([]string, 0)
+	ks := make([]string, 0)
 	for k := range t {
-		keys = append(keys, k)
+		ks = append(ks, k)
 	}
 
-	sort.Strings(keys)
+	sort.Strings(ks)
 
-	labels := make([]string, 0, len(keys))
-	for _, k := range keys {
+	labels := make([]string, 0, len(ks))
+	for _, k := range ks {
 		labels = append(labels, fmt.Sprintf("%s=%s", k, _replacer.Replace(t[k])))
 	}
 
