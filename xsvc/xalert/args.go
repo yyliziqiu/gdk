@@ -11,17 +11,38 @@ import (
 	"github.com/yyliziqiu/gdk/xlog"
 )
 
+var _replacer = strings.NewReplacer(
+	" ", "_",
+	";", ",",
+	"=", ":",
+	"\r", " ",
+	"\n", " ",
+	"\t", " ",
+)
+
 type Args map[string]string
 
-func NewArgs(kvs ...any) (Args, error) {
+func NA1(kvs ...any) (Args, error) {
 	args := make(Args, 16)
 	return args.Add(kvs...)
 }
 
-func KA(kvs ...any) (string, Args) {
+func NA2(kvs ...any) Args {
+	args := make(Args, 16)
+	return args.MustAdd(kvs...)
+}
+
+func NA3(kvs ...any) (Args, string) {
 	args := make(Args, 16)
 	args.MustAdd(kvs...)
-	return args.Key(), args
+	return args, args.Key()
+}
+
+func (t Args) MustAdd(kvs ...any) Args {
+	if _, err := t.Add(kvs...); err != nil {
+		xlog.Errorf("[Args.MustAdd] Args error: %v", err)
+	}
+	return t
 }
 
 func (t Args) Add(kvs ...any) (Args, error) {
@@ -54,33 +75,19 @@ func (t Args) Add(kvs ...any) (Args, error) {
 	return t, nil
 }
 
-func (t Args) MustAdd(kvs ...any) Args {
-	if _, err := t.Add(kvs...); err != nil {
-		xlog.Errorf("[Args.MustAdd] Args error: %v", err)
-	}
-	return t
-}
-
-var _replacer = strings.NewReplacer(
-	" ", "_",
-	";", ",",
-	"=", ":",
-	"\r", " ",
-	"\n", " ",
-	"\t", " ",
-)
-
 func (t Args) Key() string {
 	ks := make([]string, 0)
 	for k := range t {
-		ks = append(ks, k)
+		if k[0] == '@' && len(k) > 1 {
+			ks = append(ks, k)
+		}
 	}
 
 	sort.Strings(ks)
 
 	labels := make([]string, 0, len(ks))
 	for _, k := range ks {
-		labels = append(labels, fmt.Sprintf("%s=%s", k, _replacer.Replace(t[k])))
+		labels = append(labels, fmt.Sprintf("%s=%s", k[1:], _replacer.Replace(t[k])))
 	}
 
 	return strings.Join(labels, ";")

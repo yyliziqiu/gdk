@@ -14,14 +14,22 @@ func Alert(kty string, key string, args Args) error {
 	return _cli.Alert(kty, key, args)
 }
 
+func Alert2(kty string, args Args) error {
+	return _cli.Alert(kty, "", args)
+}
+
+func Alert3(kty string, kvs ...any) error {
+	return _cli.Alert(kty, "", NA2(kvs...))
+}
+
 func ClearTimer(kty string, key string, args Args) error {
 	return _cli.ClearTimer(kty, key, args)
 }
 
-func Alert2(kty string, kvs ...any) error {
-	return _cli.Alert2(kty, kvs...)
+func ClearTimer2(kty string, key string) error {
+	return _cli.ClearTimer(kty, key, nil)
 }
 
-func ClearTimer2(kty string, kvs ...any) error {
-	return _cli.ClearTimer2(kty, kvs...)
+func ClearTimer3(kty string, args Args) error {
+	return _cli.ClearTimer(kty, "", args)
 }
