@@ -25,17 +25,12 @@ func Alert3(kty string, kvs ...any) error {
 	return _cli.Alert(kty, "", NA2(kvs...))
 }
 
-// ClearTimer 清除告警计时器。若 key 为空，将自动以 args 中@开头的键构建 key
-func ClearTimer(kty string, key string, args Args) error {
-	return _cli.ClearTimer(kty, key, args)
-}
-
-// ClearTimer2 手动指定 key 时使用
-func ClearTimer2(kty string, key string) error {
+// ClearTimer 手动指定 key 时使用
+func ClearTimer(kty string, key string) error {
 	return _cli.ClearTimer(kty, key, nil)
 }
 
-// ClearTimer3 自动用 args 构建 key 时使用
-func ClearTimer3(kty string, args Args) error {
+// ClearTimer2 自动用 args 构建 key 时使用
+func ClearTimer2(kty string, args Args) error {
 	return _cli.ClearTimer(kty, "", args)
 }
