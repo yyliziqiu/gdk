@@ -8,12 +8,30 @@ import (
 	"github.com/yyliziqiu/gdk/xlog"
 )
 
+type Request struct {
+	KeyType string `json:"key_type"`
+	Key     string `json:"key"`
+	Args    Args   `json:"args"`
+}
+
+func req(keyType string, key string, args Args) Request {
+	if args == nil {
+		args = Args{}
+	}
+
+	return Request{
+		KeyType: keyType,
+		Key:     key,
+		Args:    args,
+	}
+}
+
 type Client struct {
 	dev bool
 	cli *xhttp.Client
 }
 
-func NewClient(logger *logrus.Logger, domain string, dev bool) *Client {
+func NewClient(domain string, dev bool, logger *logrus.Logger) *Client {
 	return &Client{
 		dev: dev,
 		cli: xhttp.New(
