@@ -1,4 +1,4 @@
-package ext
+package xalert
 
 import (
 	"github.com/sirupsen/logrus"

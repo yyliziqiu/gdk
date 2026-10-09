@@ -1,4 +1,4 @@
-package ext
+package xalert
 
 type Request struct {
 	KeyType string `json:"key_type"`
