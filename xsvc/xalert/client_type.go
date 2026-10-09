@@ -6,7 +6,7 @@ type Request struct {
 	Args    Args   `json:"args"`
 }
 
-func NewRequest(keyType string, key string, args Args) Request {
+func req(keyType string, key string, args Args) Request {
 	if args == nil {
 		args = Args{}
 	}
