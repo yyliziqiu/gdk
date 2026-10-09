@@ -19,19 +19,9 @@ func ClearTimer(kty string, key string, args Args) error {
 }
 
 func Alert2(kty string, kvs ...any) error {
-	args, err := NewArgs(kvs...)
-	if err != nil {
-		return err
-	}
-
-	return _cli.Alert(kty, "", args)
+	return _cli.Alert2(kty, kvs...)
 }
 
 func ClearTimer2(kty string, kvs ...any) error {
-	args, err := NewArgs(kvs...)
-	if err != nil {
-		return err
-	}
-
-	return _cli.ClearTimer(kty, "", args)
+	return _cli.ClearTimer2(kty, kvs...)
 }
