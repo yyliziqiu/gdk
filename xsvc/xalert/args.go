@@ -67,6 +67,8 @@ func (t Args) Add(kvs ...any) (Args, error) {
 			t[k] = xconv.I642S(v)
 		case float64:
 			t[k] = xconv.F642S(v, 2)
+		case error:
+			t[k] = v.Error()
 		default:
 			t[k] = fmt.Sprintf("%v", v)
 		}

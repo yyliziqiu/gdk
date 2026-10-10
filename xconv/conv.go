@@ -71,3 +71,8 @@ func F642S(f float64, prec int) string {
 func T2S(t int64) string {
 	return time.Unix(t, 0).Format(time.DateTime)
 }
+
+// F642P 小数转百分比
+func F642P(f float64, prec int) string {
+	return strconv.FormatFloat(f*100, 'f', prec, 64) + "%"
+}
